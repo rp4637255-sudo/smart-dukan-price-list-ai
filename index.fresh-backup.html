@@ -1,0 +1,1527 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Aparna Trader's - Smart POS & Voice AI Price Engine</title>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- FontAwesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              50: '#f0f7ff',
+              100: '#e0effe',
+              500: '#0284c7',
+              600: '#0369a1',
+              700: '#075985',
+              800: '#0c4a6e',
+              900: '#082f49'
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600;700;800&display=swap');
+    body {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      -webkit-tap-highlight-color: transparent;
+      background: radial-gradient(circle at 50% 0%, #0f172a 0%, #030712 100%);
+    }
+    .font-mono-num {
+      font-family: 'JetBrains Mono', monospace;
+    }
+    .custom-scroll::-webkit-scrollbar {
+      width: 4px;
+      height: 4px;
+    }
+    .custom-scroll::-webkit-scrollbar-thumb {
+      background: #334155;
+      border-radius: 4px;
+    }
+    .glass-header {
+      background: rgba(3, 7, 18, 0.88);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+    }
+    .pro-card {
+      background: linear-gradient(145deg, rgba(30, 41, 59, 0.7) 0%, rgba(15, 23, 42, 0.85) 100%);
+      box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.5), inset 0 1px 1px 0 rgba(255, 255, 255, 0.05);
+    }
+    .pro-card:hover {
+      box-shadow: 0 12px 28px -4px rgba(14, 165, 233, 0.18), inset 0 1px 1px 0 rgba(255, 255, 255, 0.1);
+    }
+    @keyframes mic-wave {
+      0%, 100% { height: 6px; }
+      50% { height: 26px; }
+    }
+    .wave-bar {
+      animation: mic-wave 1s ease-in-out infinite;
+    }
+    .wave-bar:nth-child(2) { animation-delay: 0.15s; }
+    .wave-bar:nth-child(3) { animation-delay: 0.3s; }
+    .wave-bar:nth-child(4) { animation-delay: 0.45s; }
+  </style>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col antialiased selection:bg-sky-600 selection:text-white">
+
+  <header class="sticky top-0 z-40 glass-header border-b border-slate-800/80 shadow-2xl">
+    <div class="max-w-5xl mx-auto px-4 py-3">
+      <div class="flex items-center justify-between gap-3">
+        <!-- Store Brand & Status -->
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-2xl bg-gradient-to-br from-zinc-700 via-zinc-900 to-black flex items-center justify-center text-white shadow-xl shadow-black/40 ring-1 ring-white/15 relative overflow-hidden">
+            <span class="text-[13px] font-black tracking-tighter">AT</span><span class="absolute bottom-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-amber-400 to-transparent"></span>
+          </div>
+          <div>
+            <div class="flex items-center gap-2">
+              <h1 class="text-base sm:text-lg font-black tracking-tight text-white leading-none">Aparna Trader's</h1>
+              <span class="text-[10px] font-extrabold bg-sky-500/20 text-sky-400 border border-sky-500/30 px-2 py-0.5 rounded-full tracking-wide">PRO AI POS</span>
+            </div>
+            <p class="text-[11px] font-medium text-slate-400 mt-1 flex items-center gap-1.5">
+              <span class="inline-block w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+              Hardware, Plumbing & Sanitary
+            </p>
+          </div>
+        </div>
+
+        <!-- Privacy, Voice Mute & Bill Actions -->
+        <div class="flex items-center gap-2">
+          <!-- Voice Audio Mute / Unmute Button -->
+          <button id="voiceMuteBtn" onclick="toggleVoiceMute()" title="Mute/Unmute Voice Audio Response" class="px-2.5 sm:px-3 py-2 text-xs font-semibold rounded-xl border border-slate-700 bg-slate-800/90 hover:bg-slate-700 text-slate-200 shadow-sm flex items-center gap-1.5 transition active:scale-95">
+            <i id="muteIcon" class="fa-solid fa-volume-high text-emerald-400"></i>
+            <span id="muteStatusText" class="hidden sm:inline">Voice: On</span>
+          </button>
+
+          <!-- Privacy Toggle (Owner Cost Mode vs Customer Rate Mode) -->
+          <button id="togglePrivacyBtn" onclick="togglePrivacyMode()" title="Toggle Wholesale Cost & Margin visibility" class="px-2.5 sm:px-3 py-2 text-xs font-semibold rounded-xl border border-slate-700 bg-slate-800/90 hover:bg-slate-700 text-slate-200 shadow-sm flex items-center gap-1.5 transition active:scale-95">
+            <i id="privacyIcon" class="fa-solid fa-eye text-emerald-400"></i>
+            <span id="privacyText" class="hidden sm:inline">Owner Mode</span>
+          </button>
+
+          <!-- Quick Bill / Estimate Cart Drawer Toggle -->
+          <button onclick="toggleBillModal()" class="relative px-3 py-2 text-xs font-semibold rounded-xl bg-sky-600/20 hover:bg-sky-600/30 text-sky-300 border border-sky-500/40 shadow-sm flex items-center gap-1.5 transition active:scale-95">
+            <i class="fa-solid fa-file-invoice"></i>
+            <span class="hidden sm:inline">Estimate</span>
+            <span id="cartCountBadge" class="bg-sky-600 text-white text-[10px] px-1.5 py-0.5 rounded-full font-extrabold shadow-sm">0</span>
+          </button>
+
+          <!-- Add Product Button -->
+          <button onclick="openAddModal()" class="h-9 px-3 rounded-xl bg-gradient-to-r from-sky-500 to-blue-600 hover:from-sky-400 hover:to-blue-500 text-white font-bold text-xs flex items-center gap-1.5 shadow-lg shadow-sky-600/25 transition active:scale-95">
+            <i class="fa-solid fa-plus"></i>
+            <span class="hidden sm:inline">New Item</span>
+          </button>
+        </div>
+      </div>
+
+      <div class="mt-3 relative flex items-center gap-2">
+        <div class="relative flex-1">
+          <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-sm"></i>
+          <input 
+            type="text" 
+            id="searchInput" 
+            oninput="handleSearch(this.value)" 
+            placeholder='Search or Speak: "1 inchi pipe", "CPVC socket", "4 inch p trap", "1 hp motor"...' 
+            class="w-full pl-10 pr-10 py-2.5 text-sm bg-slate-900/90 border border-slate-700/80 text-white placeholder-slate-400 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-transparent transition shadow-inner"
+          />
+          <button id="clearSearchBtn" onclick="clearSearch()" class="hidden absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white p-1">
+            <i class="fa-solid fa-xmark text-sm"></i>
+          </button>
+        </div>
+
+        <!-- Voice Search Mic Button -->
+        <button id="voiceBtn" onclick="toggleVoiceSearch()" title="Click to speak (English / Hindi phonetic search)" class="relative px-3.5 h-10 flex-shrink-0 rounded-xl bg-gradient-to-r from-sky-600 to-indigo-600 hover:from-sky-500 hover:to-indigo-500 text-white font-bold text-xs shadow-lg shadow-sky-600/25 flex items-center gap-2 transition active:scale-95">
+          <i id="micIcon" class="fa-solid fa-microphone text-sm"></i>
+          <span id="voiceStatusText" class="hidden sm:inline">Voice Search</span>
+        </button>
+
+        <!-- AI Assistant Modal Trigger -->
+        <button onclick="openAiChatModal()" title="Ask Smart AI Assistant" class="w-10 h-10 flex-shrink-0 rounded-xl bg-slate-800/90 hover:bg-slate-700 border border-slate-700 text-sky-400 hover:text-white flex items-center justify-center transition active:scale-95 shadow-sm">
+          <i class="fa-solid fa-wand-magic-sparkles text-sm"></i>
+        </button>
+      </div>
+
+      <!-- Live Voice Transcript Banner (Appears when listening or speaking) -->
+      <div id="voiceFeedbackBanner" class="hidden mt-2 p-2.5 rounded-xl bg-sky-950/80 border border-sky-700/60 flex items-center justify-between text-xs animate-fadeIn shadow-lg">
+        <div class="flex items-center gap-3">
+          <div class="flex items-center gap-1 h-5">
+            <span class="w-1 bg-sky-400 rounded-full wave-bar"></span>
+            <span class="w-1 bg-sky-400 rounded-full wave-bar"></span>
+            <span class="w-1 bg-sky-400 rounded-full wave-bar"></span>
+            <span class="w-1 bg-sky-400 rounded-full wave-bar"></span>
+          </div>
+          <div>
+            <span class="text-sky-300 font-semibold" id="voicePromptTitle">Listening...</span>
+            <span class="text-white font-medium ml-1.5" id="voiceCapturedText">Say item name (e.g., "1 inch pipe", "4 inch p trap")</span>
+          </div>
+        </div>
+        <div class="flex items-center gap-2">
+          <button onclick="toggleVoiceMute()" class="text-xs px-2 py-0.5 rounded-lg border border-slate-600 bg-slate-800 hover:bg-slate-700 text-slate-300">
+            <i id="bannerMuteIcon" class="fa-solid fa-volume-high mr-1 text-emerald-400"></i><span id="bannerMuteText">Sound ON</span>
+          </button>
+          <button onclick="stopVoiceRecognition()" class="text-sky-300 hover:text-white px-2 py-0.5 rounded-lg text-[11px] font-bold bg-sky-900/60 border border-sky-700">
+            Stop
+          </button>
+        </div>
+      </div>
+
+      <div class="flex items-center gap-2 overflow-x-auto py-2.5 mt-1 custom-scroll no-scrollbar">
+        <button onclick="filterCategory('ALL')" class="cat-pill active-cat px-3 py-1.5 text-xs font-semibold rounded-lg bg-sky-600 text-white whitespace-nowrap shadow-sm transition">
+          All Products (<span id="count_ALL">0</span>)
+        </button>
+        <button onclick="filterCategory('CPVC')" class="cat-pill px-3 py-1.5 text-xs font-semibold rounded-lg bg-slate-800 border border-slate-700 text-slate-300 hover:bg-slate-700 whitespace-nowrap transition">
+          CPVC Pipes & Fittings
+        </button>
+        <button onclick="filterCategory('UPVC')" class="cat-pill px-3 py-1.5 text-xs font-semibold rounded-lg bg-slate-800 border border-slate-700 text-slate-300 hover:bg-slate-700 whitespace-nowrap transition">
+          UPVC Fittings
+        </button>
+        <button onclick="filterCategory('PVC')" class="cat-pill px-3 py-1.5 text-xs font-semibold rounded-lg bg-slate-800 border border-slate-700 text-slate-300 hover:bg-slate-700 whitespace-nowrap transition">
+          PVC / SWR Drainage
+        </button>
+        <button onclick="filterCategory('SANITARY')" class="cat-pill px-3 py-1.5 text-xs font-semibold rounded-lg bg-slate-800 border border-slate-700 text-slate-300 hover:bg-slate-700 whitespace-nowrap transition">
+          Sanitaryware
+        </button>
+        <button onclick="filterCategory('CP_FITTINGS')" class="cat-pill px-3 py-1.5 text-xs font-semibold rounded-lg bg-slate-800 border border-slate-700 text-slate-300 hover:bg-slate-700 whitespace-nowrap transition">
+          CP Taps & Showers
+        </button>
+        <button onclick="filterCategory('SUBMERSIBLE')" class="cat-pill px-3 py-1.5 text-xs font-semibold rounded-lg bg-slate-800 border border-slate-700 text-slate-300 hover:bg-slate-700 whitespace-nowrap transition">
+          Motors & Submersible
+        </button>
+        <button onclick="filterCategory('ELECTRIC')" class="cat-pill px-3 py-1.5 text-xs font-semibold rounded-lg bg-slate-800 border border-slate-700 text-slate-300 hover:bg-slate-700 whitespace-nowrap transition">
+          Electrical & Wire
+        </button>
+        <button onclick="filterCategory('PAINT')" class="cat-pill px-3 py-1.5 text-xs font-semibold rounded-lg bg-slate-800 border border-slate-700 text-slate-300 hover:bg-slate-700 whitespace-nowrap transition">
+          Paints & Putty
+        </button>
+        <button onclick="filterCategory('HARDWARE')" class="cat-pill px-3 py-1.5 text-xs font-semibold rounded-lg bg-slate-800 border border-slate-700 text-slate-300 hover:bg-slate-700 whitespace-nowrap transition">
+          Hardware & Tools
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <main class="max-w-5xl mx-auto w-full px-4 py-4 flex-1">
+    
+    <!-- Info bar & Legend -->
+    <div class="flex items-center justify-between text-xs text-slate-400 mb-3 px-1">
+      <div id="resultCountText" class="font-medium">Showing: 0 items</div>
+      <div class="flex items-center gap-3">
+        <span class="inline-flex items-center gap-1.5 font-medium text-slate-300">
+          <span class="w-2.5 h-2.5 rounded-full bg-blue-500 shadow-sm shadow-blue-500/50"></span> Selling (Retail)
+        </span>
+        <span id="costRateLegend" class="inline-flex items-center gap-1.5 font-medium text-rose-400">
+          <span class="w-2.5 h-2.5 rounded-full bg-rose-500 shadow-sm shadow-rose-500/50"></span> Cost (Wholesale)
+        </span>
+      </div>
+    </div>
+
+    <!-- Product Grid -->
+    <div id="productGrid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+      <!-- Injected dynamically via JS -->
+    </div>
+
+    <!-- Empty State -->
+    <div id="emptyState" class="hidden py-20 text-center">
+      <div class="w-16 h-16 mx-auto rounded-2xl bg-slate-800 border border-slate-700 flex items-center justify-center text-slate-400 mb-3">
+        <i class="fa-solid fa-box-open text-2xl"></i>
+      </div>
+      <h3 class="text-sm font-bold text-slate-200">No matching items found</h3>
+      <p class="text-xs text-slate-400 mt-1 max-w-sm mx-auto">Try speaking another term like "1 inch pipe" or click the <b>+ New Item</b> button to add it.</p>
+    </div>
+  </main>
+
+  <footer class="bg-slate-950 border-t border-slate-800 py-3 px-4 text-xs text-slate-400 sticky bottom-0 z-30">
+    <div class="max-w-5xl mx-auto flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <button onclick="exportBackup()" class="hover:text-white transition flex items-center gap-1.5" title="Download complete database as JSON">
+          <i class="fa-solid fa-download text-sky-400"></i> Backup
+        </button>
+        <span class="text-slate-700">|</span>
+        <label class="hover:text-white transition flex items-center gap-1.5 cursor-pointer" title="Restore database from JSON">
+          <i class="fa-solid fa-upload text-indigo-400"></i> Restore
+          <input type="file" id="importInput" accept=".json" onchange="importBackup(event)" class="hidden">
+        </label>
+        <span class="text-slate-700">|</span>
+        <button onclick="speakSelectedSummary()" class="hover:text-emerald-400 transition flex items-center gap-1.5" title="Voice audio read out">
+          <i id="footerVoiceIcon" class="fa-solid fa-volume-high text-emerald-400"></i> Read Aloud
+        </button>
+      </div>
+
+      <div class="flex items-center gap-1 text-[11px] text-slate-500 font-medium">
+        <span>Aparna Trader's • Pure POS</span>
+      </div>
+    </div>
+  </footer>
+
+  <div id="productModal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-slate-900 border border-slate-700 text-slate-100 w-full max-w-md rounded-2xl shadow-2xl overflow-hidden">
+      <div class="px-5 py-4 bg-slate-800/80 border-b border-slate-700 flex items-center justify-between">
+        <h3 id="modalTitle" class="font-bold text-white text-sm flex items-center gap-2">
+          <i class="fa-solid fa-pen-to-square text-blue-400"></i> Add New Item
+        </h3>
+        <button onclick="closeProductModal()" class="text-slate-400 hover:text-white p-1">
+          <i class="fa-solid fa-xmark text-base"></i>
+        </button>
+      </div>
+
+      <form id="productForm" onsubmit="saveProduct(event)" class="p-5 space-y-3.5 text-xs">
+        <input type="hidden" id="editProductId">
+
+        <div>
+          <label class="block font-semibold text-slate-300 mb-1">Product Description / Name *</label>
+          <input type="text" id="formName" required placeholder="e.g., 1 Inch UPVC Pipe, 4 Inch P-Trap" class="w-full px-3 py-2 bg-slate-800 border border-slate-700 text-white rounded-xl focus:ring-2 focus:ring-blue-500 focus:outline-none">
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block font-semibold text-slate-300 mb-1">Category *</label>
+            <select id="formCategory" required class="w-full px-3 py-2 bg-slate-800 border border-slate-700 text-white rounded-xl focus:ring-2 focus:ring-blue-500 focus:outline-none">
+              <option value="CPVC">CPVC Fittings</option>
+              <option value="UPVC">UPVC Fittings</option>
+              <option value="PVC">PVC / SWR Drainage</option>
+              <option value="SANITARY">Sanitaryware</option>
+              <option value="CP_FITTINGS">CP Taps & Showers</option>
+              <option value="SUBMERSIBLE">Motors & Submersible</option>
+              <option value="ELECTRIC">Electrical & Wire</option>
+              <option value="PAINT">Paints & Putty</option>
+              <option value="HARDWARE">Hardware & Tools</option>
+            </select>
+          </div>
+          <div>
+            <label class="block font-semibold text-slate-300 mb-1">Size / Dimension</label>
+            <input type="text" id="formSize" placeholder='e.g., 1", 3/4", 4"x3", 1.5 HP' class="w-full px-3 py-2 bg-slate-800 border border-slate-700 text-white rounded-xl focus:ring-2 focus:ring-blue-500 focus:outline-none">
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block font-semibold text-rose-400 mb-1">Cost / Purchase Rate (₹) *</label>
+            <input type="number" step="any" id="formCost" required placeholder="181" class="w-full px-3 py-2 bg-rose-950/30 border border-rose-900/60 font-mono-num font-bold text-rose-300 rounded-xl focus:ring-2 focus:ring-rose-500 focus:outline-none">
+          </div>
+          <div>
+            <label class="block font-semibold text-blue-400 mb-1">Selling / Retail Rate (₹) *</label>
+            <input type="number" step="any" id="formSelling" required placeholder="200" class="w-full px-3 py-2 bg-blue-950/30 border border-blue-900/60 font-mono-num font-bold text-blue-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:outline-none">
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block font-semibold text-slate-300 mb-1">Unit</label>
+            <input type="text" id="formUnit" placeholder="Pcs, Set, Meter, Packet" value="Pcs" class="w-full px-3 py-2 bg-slate-800 border border-slate-700 text-white rounded-xl focus:ring-2 focus:ring-blue-500 focus:outline-none">
+          </div>
+          <div>
+            <label class="block font-semibold text-slate-300 mb-1">Brand / Note (Optional)</label>
+            <input type="text" id="formBrand" placeholder="e.g., Supreme, Finolex, Prado" class="w-full px-3 py-2 bg-slate-800 border border-slate-700 text-white rounded-xl focus:ring-2 focus:ring-blue-500 focus:outline-none">
+          </div>
+        </div>
+
+        <div class="pt-2 flex items-center justify-end gap-2">
+          <button type="button" onclick="closeProductModal()" class="px-4 py-2 rounded-xl border border-slate-700 text-slate-300 hover:bg-slate-800 font-medium">Cancel</button>
+          <button type="submit" class="px-5 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold shadow-md shadow-blue-600/30">Save Product</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div id="billModal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-slate-900 border border-slate-700 w-full max-w-lg rounded-2xl shadow-2xl flex flex-col max-h-[85vh] overflow-hidden">
+      <div class="px-5 py-4 bg-slate-800/80 border-b border-slate-700 flex items-center justify-between">
+        <div>
+          <h3 class="font-bold text-white text-sm flex items-center gap-2">
+            <i class="fa-solid fa-file-invoice text-blue-400"></i> Customer Estimate / Parcha
+          </h3>
+          <p class="text-[11px] text-slate-400 mt-0.5">Quickly assemble orders and share on WhatsApp</p>
+        </div>
+        <button onclick="toggleBillModal()" class="text-slate-400 hover:text-white p-1">
+          <i class="fa-solid fa-xmark text-base"></i>
+        </button>
+      </div>
+
+      <div id="billItemsContainer" class="p-4 flex-1 overflow-y-auto space-y-2 text-xs custom-scroll">
+        <!-- Rendered by JS -->
+      </div>
+
+      <div class="p-4 bg-slate-950 border-t border-slate-800 space-y-3">
+        <div class="flex items-center justify-between text-sm font-bold text-white">
+          <span>Total Estimate Amount:</span>
+          <span id="billGrandTotal" class="text-xl font-mono-num text-blue-400">₹0</span>
+        </div>
+        <div id="billProfitRow" class="flex items-center justify-between text-xs font-semibold text-emerald-400">
+          <span>Estimated Owner Profit:</span>
+          <span id="billTotalProfit" class="font-mono-num">₹0</span>
+        </div>
+
+        <div class="flex items-center gap-2 pt-1">
+          <button onclick="clearBillCart()" class="px-3.5 py-2 text-xs rounded-xl border border-rose-900/60 bg-rose-950/20 text-rose-400 hover:bg-rose-900/30 font-semibold">
+            <i class="fa-solid fa-trash-can mr-1"></i> Clear
+          </button>
+          <button onclick="shareBillWhatsapp()" class="flex-1 py-2 text-xs rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold shadow-lg shadow-emerald-600/25 flex items-center justify-center gap-2">
+            <i class="fa-brands fa-whatsapp text-sm"></i> Share Estimate on WhatsApp
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="aiModal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-slate-900 border border-slate-700 w-full max-w-md rounded-2xl shadow-2xl flex flex-col h-[520px] overflow-hidden">
+      <!-- AI Header -->
+      <div class="px-4 py-3 bg-gradient-to-r from-sky-600 via-blue-600 to-indigo-700 text-white flex items-center justify-between">
+        <div class="flex items-center gap-2.5">
+          <div class="w-8 h-8 rounded-lg bg-white/20 flex items-center justify-center text-white">
+            <i class="fa-solid fa-robot"></i>
+          </div>
+          <div>
+            <h3 class="font-bold text-xs">Aparna AI Assistant (Instant Rate Engine)</h3>
+            <p class="text-[10px] text-sky-200">Semantic voice search & quotation breakdown</p>
+          </div>
+        </div>
+        <button onclick="closeAiChatModal()" class="text-white/80 hover:text-white p-1">
+          <i class="fa-solid fa-xmark text-base"></i>
+        </button>
+      </div>
+
+      <!-- AI Chat History -->
+      <div id="aiChatBox" class="p-4 flex-1 overflow-y-auto space-y-3 text-xs custom-scroll bg-slate-950">
+        <div class="flex items-start gap-2">
+          <div class="w-6 h-6 rounded-full bg-sky-600 text-white flex items-center justify-center flex-shrink-0 text-[10px]">
+            AI
+          </div>
+          <div class="bg-slate-800 border border-slate-700 p-3 rounded-2xl rounded-tl-none shadow-sm max-w-[85%] text-slate-200 leading-relaxed">
+            Hello! Ask me any product price like <b>"1 inchi pipe"</b>, <b>"wall mixer"</b>, or <b>"1 hp motor"</b>. I will instantly pull the rate and profit details for you.
+          </div>
+        </div>
+      </div>
+
+      <!-- AI Input area -->
+      <div class="p-3 bg-slate-900 border-t border-slate-800 flex items-center gap-2">
+        <input 
+          type="text" 
+          id="aiUserQuery" 
+          onkeydown="if(event.key === 'Enter') sendAiMessage()"
+          placeholder='Ask rate (e.g., "1 inchi pipe rate")...' 
+          class="flex-1 px-3 py-2 text-xs bg-slate-800 border border-slate-700 text-white rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500"
+        />
+        <button onclick="sendAiMessage()" class="w-9 h-9 rounded-xl bg-sky-600 hover:bg-sky-500 text-white flex items-center justify-center shadow-md shadow-sky-600/30 flex-shrink-0">
+          <i class="fa-solid fa-paper-plane text-xs"></i>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div id="toast" class="fixed bottom-14 left-1/2 -translate-x-1/2 z-50 bg-slate-800 border border-slate-700 text-white text-xs font-semibold px-4 py-2.5 rounded-xl shadow-2xl opacity-0 pointer-events-none transition-all duration-300 flex items-center gap-2">
+    <i id="toastIcon" class="fa-solid fa-circle-check text-emerald-400"></i>
+    <span id="toastMsg">Operation successful</span>
+  </div>
+
+  <script>
+    /* Complete Preloaded Inventory extracted directly from Aparna Trader's notebook pages */
+    const DEFAULT_PRODUCTS = [
+      // CPVC Page 1
+      { id: 'cpvc_1', name: 'CPVC Pipe', category: 'CPVC', size: '3/4"', cost: 181, selling: 200, unit: 'Pcs', brand: 'Aparna Standard' },
+      { id: 'cpvc_2', name: 'CPVC Socket', category: 'CPVC', size: '3/4"', cost: 8.5, selling: 15, unit: 'Pcs', brand: '' },
+      { id: 'cpvc_3', name: 'CPVC Elbow', category: 'CPVC', size: '3/4"', cost: 12.5, selling: 20, unit: 'Pcs', brand: '' },
+      { id: 'cpvc_4', name: 'CPVC Tee', category: 'CPVC', size: '3/4"', cost: 19, selling: 25, unit: 'Pcs', brand: '' },
+      { id: 'cpvc_5', name: 'CPVC Step Over Bend', category: 'CPVC', size: '3/4"', cost: 65, selling: 75, unit: 'Pcs', brand: '' },
+      { id: 'cpvc_6', name: 'CPVC Brass Tee', category: 'CPVC', size: '3/4" x 1/2"', cost: 56.5, selling: 66, unit: 'Pcs', brand: 'Brass' },
+      { id: 'cpvc_7', name: 'CPVC Brass Elbow', category: 'CPVC', size: '3/4" x 1/2"', cost: 50, selling: 60, unit: 'Pcs', brand: 'Brass' },
+      { id: 'cpvc_8', name: 'CPVC Brass FTA', category: 'CPVC', size: '3/4" x 1/2"', cost: 50, selling: 60, unit: 'Pcs', brand: 'Brass' },
+      { id: 'cpvc_9', name: 'CPVC Brass MTA', category: 'CPVC', size: '3/4" x 1/2"', cost: 71.5, selling: 80, unit: 'Pcs', brand: 'Brass' },
+      { id: 'cpvc_10', name: 'CPVC Bush', category: 'CPVC', size: '3/4"', cost: 11, selling: 15, unit: 'Pcs', brand: '' },
+      { id: 'cpvc_11', name: 'CPVC End Cap', category: 'CPVC', size: '3/4"', cost: 9, selling: 12, unit: 'Pcs', brand: '' },
+      { id: 'cpvc_12', name: 'CPVC Brass Mixer Adaptor', category: 'CPVC', size: '3/4"', cost: 275, selling: 300, unit: 'Pcs', brand: 'Brass' },
+      { id: 'cpvc_13', name: 'CPVC Shoe Elbow', category: 'CPVC', size: '3/4"', cost: 15, selling: 20, unit: 'Pcs', brand: '' },
+      { id: 'cpvc_14', name: 'CPVC Solvent (100ml)', category: 'CPVC', size: '100 ml', cost: 130, selling: 140, unit: 'Can', brand: 'Heavy' },
+      { id: 'cpvc_15', name: 'CPVC Solvent (50ml)', category: 'CPVC', size: '50 ml', cost: 85, selling: 90, unit: 'Can', brand: 'Heavy' },
+
+      // UPVC Page 1
+      { id: 'upvc_1', name: 'UPVC Pipe (1 inchi pipe)', category: 'UPVC', size: '1"', cost: 199, selling: 230, unit: 'Pcs', brand: 'A-Class' },
+      { id: 'upvc_2', name: 'UPVC Socket', category: 'UPVC', size: '1"', cost: 13, selling: 20, unit: 'Pcs', brand: '' },
+      { id: 'upvc_3', name: 'UPVC Elbow', category: 'UPVC', size: '1"', cost: 19, selling: 25, unit: 'Pcs', brand: '' },
+      { id: 'upvc_4', name: 'UPVC Tee', category: 'UPVC', size: '1"', cost: 25, selling: 30, unit: 'Pcs', brand: '' },
+      { id: 'upvc_5', name: 'UPVC Shoe Elbow', category: 'UPVC', size: '1"', cost: 18, selling: 25, unit: 'Pcs', brand: '' },
+      { id: 'upvc_6', name: 'UPVC Brass Elbow', category: 'UPVC', size: '1" x 1/2"', cost: 66.5, selling: 75, unit: 'Pcs', brand: 'Brass' },
+      { id: 'upvc_7', name: 'UPVC Brass Tee', category: 'UPVC', size: '1" x 1/2"', cost: 77, selling: 85, unit: 'Pcs', brand: 'Brass' },
+      { id: 'upvc_8', name: 'UPVC FTA', category: 'UPVC', size: '1"', cost: 14, selling: 20, unit: 'Pcs', brand: '' },
+      { id: 'upvc_9', name: 'UPVC MTA', category: 'UPVC', size: '1"', cost: 11, selling: 15, unit: 'Pcs', brand: '' },
+      { id: 'upvc_10', name: 'UPVC Tank Nipple', category: 'UPVC', size: '1"', cost: 35.5, selling: 50, unit: 'Pcs', brand: '' },
+      { id: 'upvc_11', name: 'UPVC Union', category: 'UPVC', size: '1"', cost: 36.5, selling: 45, unit: 'Pcs', brand: '' },
+      { id: 'upvc_12', name: 'UPVC Ball Valve', category: 'UPVC', size: '1"', cost: 95.5, selling: 110, unit: 'Pcs', brand: '' },
+      { id: 'upvc_13', name: 'UPVC Clamp', category: 'UPVC', size: '1"', cost: 4.5, selling: 10, unit: 'Pcs', brand: '' },
+      { id: 'upvc_14', name: 'UPVC End Cap', category: 'UPVC', size: '1"', cost: 9.5, selling: 15, unit: 'Pcs', brand: '' },
+      { id: 'upvc_15', name: 'UPVC Bush', category: 'UPVC', size: '1" x 3/4"', cost: 6.5, selling: 10, unit: 'Pcs', brand: '' },
+      { id: 'upvc_16', name: 'UPVC Bush', category: 'UPVC', size: '1" x 1/2"', cost: 6.5, selling: 10, unit: 'Pcs', brand: '' },
+      { id: 'upvc_17', name: 'UPVC Pipe (1.25 inchi)', category: 'UPVC', size: '1 1/4"', cost: 225, selling: 260, unit: 'Pcs', brand: '' },
+      { id: 'upvc_18', name: 'UPVC Socket', category: 'UPVC', size: '1 1/4"', cost: 20, selling: 30, unit: 'Pcs', brand: '' },
+      { id: 'upvc_19', name: 'UPVC Elbow', category: 'UPVC', size: '1 1/4"', cost: 31, selling: 40, unit: 'Pcs', brand: '' },
+      { id: 'upvc_20', name: 'UPVC Tee', category: 'UPVC', size: '1 1/4"', cost: 40.5, selling: 45, unit: 'Pcs', brand: '' },
+      { id: 'upvc_21', name: 'UPVC Shoe Elbow', category: 'UPVC', size: '1 1/4"', cost: 42, selling: 50, unit: 'Pcs', brand: '' },
+      { id: 'upvc_22', name: 'UPVC Tank Connector', category: 'UPVC', size: '1 1/4"', cost: 64, selling: 75, unit: 'Pcs', brand: '' },
+      { id: 'upvc_23', name: 'UPVC Union', category: 'UPVC', size: '1 1/4"', cost: 50.5, selling: 60, unit: 'Pcs', brand: '' },
+      { id: 'upvc_24', name: 'UPVC Ball Valve', category: 'UPVC', size: '1 1/4"', cost: 150, selling: 160, unit: 'Pcs', brand: '' },
+      { id: 'upvc_25', name: 'UPVC Bush', category: 'UPVC', size: '1 1/4" x 1"', cost: 12.5, selling: 20, unit: 'Pcs', brand: '' },
+      { id: 'upvc_26', name: 'UPVC End Cap', category: 'UPVC', size: '1 1/4" x 1"', cost: 12.5, selling: 20, unit: 'Pcs', brand: '' },
+      { id: 'upvc_27', name: 'UPVC FTA', category: 'UPVC', size: '3/4"', cost: 7.5, selling: 10, unit: 'Pcs', brand: '' },
+
+      { id: 'pvc_1', name: 'PVC Pipe', category: 'PVC', size: '3/4"', cost: 138, selling: 160, unit: 'Pcs', brand: '' },
+      { id: 'pvc_2', name: 'PVC Elbow', category: 'PVC', size: '3/4"', cost: 12.5, selling: 20, unit: 'Pcs', brand: '' },
+      { id: 'pvc_3', name: 'PVC Socket', category: 'PVC', size: '3/4"', cost: 8, selling: 15, unit: 'Pcs', brand: '' },
+      { id: 'pvc_4', name: 'PVC Tee', category: 'PVC', size: '3/4"', cost: 16.5, selling: 20, unit: 'Pcs', brand: '' },
+      { id: 'pvc_5', name: 'PVC Shoe Elbow', category: 'PVC', size: '3/4"', cost: 10.5, selling: 15, unit: 'Pcs', brand: '' },
+      { id: 'pvc_6', name: 'PVC Brass Elbow', category: 'PVC', size: '3/4" x 1/2"', cost: 55, selling: 60, unit: 'Pcs', brand: '' },
+      { id: 'pvc_7', name: 'PVC Brass Tee', category: 'PVC', size: '3/4" x 1/2"', cost: 62.5, selling: 70, unit: 'Pcs', brand: '' },
+      { id: 'pvc_8', name: 'PVC Tank Nipple', category: 'PVC', size: '3/4"', cost: 27, selling: 40, unit: 'Pcs', brand: '' },
+      { id: 'pvc_9', name: 'PVC Union', category: 'PVC', size: '3/4"', cost: 25, selling: 35, unit: 'Pcs', brand: '' },
+      { id: 'pvc_10', name: 'PVC Ball Valve', category: 'PVC', size: '3/4"', cost: 72, selling: 85, unit: 'Pcs', brand: '' },
+      { id: 'pvc_11', name: 'PVC End Cap', category: 'PVC', size: '3/4"', cost: 6.5, selling: 10, unit: 'Pcs', brand: '' },
+      { id: 'pvc_12', name: 'PVC Clamp', category: 'PVC', size: '3/4"', cost: 4, selling: 10, unit: 'Pcs', brand: '' },
+      { id: 'pvc_13', name: 'PVC Pipe (1/2 inchi pipe)', category: 'PVC', size: '1/2"', cost: 102.5, selling: 120, unit: 'Pcs', brand: '' },
+      { id: 'pvc_14', name: 'PVC Elbow', category: 'PVC', size: '1/2"', cost: 7, selling: 10, unit: 'Pcs', brand: '' },
+      { id: 'pvc_15', name: 'PVC Socket', category: 'PVC', size: '1/2"', cost: 5, selling: 10, unit: 'Pcs', brand: '' },
+      { id: 'pvc_16', name: 'PVC Tee', category: 'PVC', size: '1/2"', cost: 9, selling: 15, unit: 'Pcs', brand: '' },
+      { id: 'pvc_17', name: 'PVC Brass Elbow', category: 'PVC', size: '1/2"', cost: 50, selling: 60, unit: 'Pcs', brand: '' },
+      { id: 'pvc_18', name: 'PVC Brass Tee', category: 'PVC', size: '1/2"', cost: 58, selling: 65, unit: 'Pcs', brand: '' },
+      { id: 'pvc_19', name: 'PVC FTA', category: 'PVC', size: '1/2"', cost: 6, selling: 10, unit: 'Pcs', brand: '' },
+      { id: 'pvc_20', name: 'PVC MTA', category: 'PVC', size: '1/2"', cost: 6, selling: 10, unit: 'Pcs', brand: '' },
+      { id: 'pvc_21', name: 'PVC Brass FTA', category: 'PVC', size: '1/2"', cost: 44, selling: 55, unit: 'Pcs', brand: '' },
+      { id: 'pvc_22', name: 'PVC Brass MTA', category: 'PVC', size: '1/2"', cost: 59, selling: 65, unit: 'Pcs', brand: '' },
+      { id: 'pvc_23', name: 'PVC Clamp', category: 'PVC', size: '1/2"', cost: 3.5, selling: 10, unit: 'Pcs', brand: '' },
+      { id: 'pvc_24', name: 'PVC End Cap', category: 'PVC', size: '1/2"', cost: 4.5, selling: 10, unit: 'Pcs', brand: '' },
+      { id: 'pvc_25', name: 'PVC Solvent (100ml)', category: 'PVC', size: '100 ml', cost: 105, selling: 120, unit: 'Can', brand: '' },
+      { id: 'pvc_26', name: 'PVC Solvent (50ml)', category: 'PVC', size: '50 ml', cost: 70, selling: 90, unit: 'Can', brand: '' },
+      { id: 'pvc_27', name: 'Chiri Nail', category: 'HARDWARE', size: '1"', cost: 110, selling: 125, unit: 'Packet', brand: '' },
+      { id: 'pvc_28', name: 'Chiri Nail', category: 'HARDWARE', size: '1 1/2"', cost: 110, selling: 125, unit: 'Packet', brand: '' },
+      { id: 'pvc_29', name: 'Black Nail (Kanta)', category: 'HARDWARE', size: '2"', cost: 240, selling: 260, unit: 'Packet', brand: '' },
+      { id: 'pvc_30', name: 'Teflon Tape', category: 'HARDWARE', size: 'Standard', cost: 7.5, selling: 10, unit: 'Pcs', brand: '' },
+      { id: 'pvc_31', name: 'Hex Blade', category: 'HARDWARE', size: 'Standard', cost: 10, selling: 15, unit: 'Pcs', brand: '' },
+
+      // Drainage / SWR PVC (4" and 3")
+      { id: 'swr_1', name: '4" 10\' S/S Drainage Pipe', category: 'PVC', size: '4" x 10ft', cost: 400, selling: 450, unit: 'Pcs', brand: 'S/S' },
+      { id: 'swr_2', name: '4" D/S Drainage Pipe', category: 'PVC', size: '4"', cost: 493.5, selling: 550, unit: 'Pcs', brand: 'D/S' },
+      { id: 'swr_3', name: '4" SWR Socket', category: 'PVC', size: '4"', cost: 52, selling: 60, unit: 'Pcs', brand: '' },
+      { id: 'swr_4', name: '4" Plain Tee', category: 'PVC', size: '4"', cost: 133, selling: 150, unit: 'Pcs', brand: '' },
+      { id: 'swr_5', name: '4" Door Bend', category: 'PVC', size: '4"', cost: 120, selling: 135, unit: 'Pcs', brand: '' },
+      { id: 'swr_6', name: '4" P-Trap (4 inchi p trap)', category: 'PVC', size: '4"', cost: 208, selling: 230, unit: 'Pcs', brand: 'P-Trap' },
+      { id: 'swr_7', name: 'Nahani Trap (N-Trap)', category: 'PVC', size: '4" x 3"', cost: 91, selling: 100, unit: 'Pcs', brand: '' },
+      { id: 'swr_8', name: '4" Plain Y', category: 'PVC', size: '4"', cost: 191, selling: 210, unit: 'Pcs', brand: '' },
+      { id: 'swr_9', name: '4" End Cap', category: 'PVC', size: '4"', cost: 30.5, selling: 35, unit: 'Pcs', brand: '' },
+      { id: 'swr_10', name: '4" Cowel (Vent)', category: 'PVC', size: '4"', cost: 20, selling: 30, unit: 'Pcs', brand: '' },
+      { id: 'swr_11', name: '4" Clamp', category: 'PVC', size: '4"', cost: 15, selling: 20, unit: 'Pcs', brand: '' },
+      { id: 'swr_12', name: '3" 10\' S/S Pipe', category: 'PVC', size: '3" x 10ft', cost: 240, selling: 270, unit: 'Pcs', brand: '' },
+      { id: 'swr_13', name: '3" D/S Pipe', category: 'PVC', size: '3"', cost: 265, selling: 295, unit: 'Pcs', brand: '' },
+      { id: 'swr_14', name: '3" Plain Bend', category: 'PVC', size: '3"', cost: 52, selling: 60, unit: 'Pcs', brand: '' },
+      { id: 'swr_15', name: '3" Plain Tee', category: 'PVC', size: '3"', cost: 75, selling: 85, unit: 'Pcs', brand: '' },
+      { id: 'swr_16', name: '3" Socket', category: 'PVC', size: '3"', cost: 44.5, selling: 55, unit: 'Pcs', brand: '' },
+      { id: 'swr_17', name: '3" Door Bend', category: 'PVC', size: '3"', cost: 66.5, selling: 75, unit: 'Pcs', brand: '' },
+      { id: 'swr_18', name: '3" Door Tee', category: 'PVC', size: '3"', cost: 90, selling: 100, unit: 'Pcs', brand: '' },
+      { id: 'swr_19', name: '3" Plain Y', category: 'PVC', size: '3"', cost: 98, selling: 110, unit: 'Pcs', brand: '' },
+      { id: 'swr_20', name: '3" Cowel (Vent)', category: 'PVC', size: '3"', cost: 17, selling: 20, unit: 'Pcs', brand: '' },
+      { id: 'swr_21', name: '3" End Cap', category: 'PVC', size: '3"', cost: 20, selling: 25, unit: 'Pcs', brand: '' },
+      { id: 'swr_22', name: 'PVC Reducer', category: 'PVC', size: '4" x 3"', cost: 67.5, selling: 75, unit: 'Pcs', brand: '' },
+      { id: 'swr_23', name: 'Rubber Lubricant', category: 'PVC', size: '100 gm', cost: 32, selling: 40, unit: 'Pcs', brand: '' },
+      { id: 'swr_24', name: 'Dummy Plug', category: 'PVC', size: '1/2"', cost: 2.5, selling: 5, unit: 'Pcs', brand: '' },
+
+      { id: 'cp_1', name: 'Prado Wall Mixer', category: 'CP_FITTINGS', size: 'Standard', cost: 2250, selling: 2500, unit: 'Pcs', brand: 'Prado' },
+      { id: 'cp_2', name: 'Prado Bib Cock', category: 'CP_FITTINGS', size: 'Standard', cost: 467.5, selling: 540, unit: 'Pcs', brand: 'Prado' },
+      { id: 'cp_3', name: 'Prado Pillar Cock', category: 'CP_FITTINGS', size: 'Standard', cost: 536, selling: 590, unit: 'Pcs', brand: 'Prado' },
+      { id: 'cp_4', name: 'Prado Swan Neck', category: 'CP_FITTINGS', size: 'Standard', cost: 756, selling: 820, unit: 'Pcs', brand: 'Prado' },
+      { id: 'cp_5', name: 'Prado Sink Cock', category: 'CP_FITTINGS', size: 'Standard', cost: 756, selling: 815, unit: 'Pcs', brand: 'Prado' },
+      { id: 'cp_6', name: 'Prado 2 in 1 Bib Cock', category: 'CP_FITTINGS', size: 'Standard', cost: 880, selling: 950, unit: 'Pcs', brand: 'Prado' },
+      { id: 'cp_7', name: 'Prado 2 in 1 Angle Cock', category: 'CP_FITTINGS', size: 'Standard', cost: 784, selling: 860, unit: 'Pcs', brand: 'Prado' },
+      { id: 'cp_8', name: 'Ford Wall Mixer', category: 'CP_FITTINGS', size: 'Standard', cost: 2035, selling: 2235, unit: 'Pcs', brand: 'Ford' },
+      { id: 'cp_9', name: 'Ford Sink Mixer', category: 'CP_FITTINGS', size: 'Standard', cost: 1680, selling: 1848, unit: 'Pcs', brand: 'Ford' },
+      { id: 'cp_10', name: 'Ford Bib Cock', category: 'CP_FITTINGS', size: 'Standard', cost: 398.5, selling: 440, unit: 'Pcs', brand: 'Ford' },
+      { id: 'cp_11', name: 'Ford Pillar Cock', category: 'CP_FITTINGS', size: 'Standard', cost: 453.75, selling: 500, unit: 'Pcs', brand: 'Ford' },
+      { id: 'cp_12', name: 'Ford Swan Neck', category: 'CP_FITTINGS', size: 'Standard', cost: 687.5, selling: 760, unit: 'Pcs', brand: 'Ford' },
+      { id: 'cp_13', name: 'Ford Sink Cock', category: 'CP_FITTINGS', size: 'Standard', cost: 660, selling: 726, unit: 'Pcs', brand: 'Ford' },
+      { id: 'cp_14', name: 'CSPL Angle Cock', category: 'CP_FITTINGS', size: 'Standard', cost: 220, selling: 250, unit: 'Pcs', brand: 'CSPL' },
+      { id: 'cp_15', name: 'M/S Angle Cock', category: 'CP_FITTINGS', size: 'Standard', cost: 88, selling: 150, unit: 'Pcs', brand: 'M/S' },
+      { id: 'cp_16', name: 'ABS Health Faucet Set (H/F)', category: 'CP_FITTINGS', size: 'Set', cost: 210, selling: 250, unit: 'Set', brand: 'ABS' },
+      { id: 'cp_17', name: 'Towel Ring', category: 'CP_FITTINGS', size: 'Standard', cost: 125, selling: 150, unit: 'Pcs', brand: '' },
+      { id: 'cp_18', name: 'Towel Rod (24 inch)', category: 'CP_FITTINGS', size: '24"', cost: 175, selling: 250, unit: 'Pcs', brand: 'SS' },
+      { id: 'cp_19', name: 'Towel Rod (18 inch)', category: 'CP_FITTINGS', size: '18"', cost: 165, selling: 220, unit: 'Pcs', brand: 'SS' },
+      { id: 'cp_20', name: 'Soap Dish (SS)', category: 'CP_FITTINGS', size: 'Standard', cost: 95, selling: 115, unit: 'Pcs', brand: 'SS' },
+      { id: 'cp_21', name: 'Red Tap', category: 'CP_FITTINGS', size: 'Standard', cost: 55, selling: 70, unit: 'Pcs', brand: '' },
+      { id: 'cp_22', name: 'Corner Basin Shelf (U/U)', category: 'SANITARY', size: 'Standard', cost: 270, selling: 290, unit: 'Pcs', brand: '' },
+      { id: 'cp_23', name: 'Nozzle Bib Cock', category: 'CP_FITTINGS', size: 'Standard', cost: 48, selling: 60, unit: 'Pcs', brand: '' },
+      { id: 'cp_24', name: 'Khunti (Cloth Hooks)', category: 'HARDWARE', size: 'Standard', cost: 78, selling: 85, unit: 'Pcs', brand: 'SS' },
+      { id: 'cp_25', name: 'SS Jali Plain 4"', category: 'CP_FITTINGS', size: '4"', cost: 22, selling: 30, unit: 'Pcs', brand: 'SS' },
+      { id: 'cp_26', name: 'SS Jali Hole 4"', category: 'CP_FITTINGS', size: '4"', cost: 22, selling: 30, unit: 'Pcs', brand: 'SS' },
+      { id: 'cp_27', name: 'Kitchen Sink 24" x 18"', category: 'SANITARY', size: '24" x 18"', cost: 950, selling: 1050, unit: 'Pcs', brand: 'SS 304' },
+      { id: 'cp_28', name: 'Kitchen Sink 20" x 17"', category: 'SANITARY', size: '20" x 17"', cost: 920, selling: 1020, unit: 'Pcs', brand: 'SS 304' },
+      { id: 'cp_29', name: 'Conti Overhead Shower', category: 'CP_FITTINGS', size: 'Standard', cost: 200, selling: 250, unit: 'Pcs', brand: 'Conti' },
+      { id: 'cp_30', name: 'Jaquar Type Shower', category: 'CP_FITTINGS', size: 'Standard', cost: 300, selling: 330, unit: 'Pcs', brand: 'Jaquar Model' },
+      { id: 'cp_31', name: 'Polo Bib Cock', category: 'CP_FITTINGS', size: 'Standard', cost: 25, selling: 35, unit: 'Pcs', brand: 'Polo' },
+      { id: 'cp_32', name: 'Polo Angle Cock', category: 'CP_FITTINGS', size: 'Standard', cost: 25, selling: 35, unit: 'Pcs', brand: 'Polo' },
+      { id: 'cp_33', name: 'Sintex Water Tank 1000L', category: 'SANITARY', size: '1000 Ltr', cost: 4500, selling: 5200, unit: 'Pcs', brand: 'Sintex' },
+      { id: 'cp_34', name: 'Sintex Water Tank 500L', category: 'SANITARY', size: '500 Ltr', cost: 2300, selling: 2700, unit: 'Pcs', brand: 'Sintex' },
+      { id: 'cp_35', name: 'Garden Pipe VTK', category: 'HARDWARE', size: '1"', cost: 1064, selling: 1250, unit: 'Bundle', brand: 'VTK' },
+
+      { id: 'sp_1', name: 'Spars Pearl Bib Cock TS 101', category: 'CP_FITTINGS', size: 'Standard', cost: 126, selling: 160, unit: 'Pcs', brand: 'Spars Pearl' },
+      { id: 'sp_2', name: 'Spars Pearl Angle Cock TS 105', category: 'CP_FITTINGS', size: 'Standard', cost: 126.75, selling: 153, unit: 'Pcs', brand: 'Spars Pearl' },
+      { id: 'sp_3', name: 'Extension Nipple', category: 'CP_FITTINGS', size: 'Standard', cost: 33.8, selling: 40, unit: 'Pcs', brand: 'Brass' },
+      { id: 'sp_4', name: 'Wall Mixer L Bend', category: 'CP_FITTINGS', size: 'Standard', cost: 981.5, selling: 1180, unit: 'Pcs', brand: 'Spars Pearl' },
+      { id: 'sp_5', name: 'Spars Pearl Swan Neck', category: 'CP_FITTINGS', size: 'Standard', cost: 393, selling: 450, unit: 'Pcs', brand: 'Spars Pearl' },
+      { id: 'sp_6', name: 'Spars Pearl Sink Cock', category: 'CP_FITTINGS', size: 'Standard', cost: 387, selling: 450, unit: 'Pcs', brand: 'Spars Pearl' },
+      { id: 'sp_7', name: 'Spars Pearl Pillar Cock', category: 'CP_FITTINGS', size: 'Standard', cost: 260, selling: 310, unit: 'Pcs', brand: 'Spars Pearl' },
+      { id: 'sp_8', name: 'Soap Dispenser', category: 'CP_FITTINGS', size: 'Standard', cost: 377, selling: 414, unit: 'Pcs', brand: 'Spars Pearl' },
+      { id: 'sp_9', name: 'Hero HP 1.2 MTR Chrome', category: 'CP_FITTINGS', size: '1.2 Meter', cost: 481, selling: 530, unit: 'Pcs', brand: 'Hero' },
+      { id: 'sp_10', name: 'PVC Corner Shelf', category: 'SANITARY', size: 'Standard', cost: 391, selling: 460, unit: 'Pcs', brand: 'PVC' },
+      { id: 'sp_11', name: 'Mirror Cabinet', category: 'SANITARY', size: 'Standard', cost: 1066, selling: 1250, unit: 'Pcs', brand: 'Cabinet' },
+      { id: 'sp_12', name: 'Flash Cistern (Flush Tank)', category: 'SANITARY', size: 'Standard', cost: 650, selling: 780, unit: 'Pcs', brand: 'Standard' },
+      { id: 'sp_13', name: 'Z Spray 1 MTR', category: 'CP_FITTINGS', size: '1 Meter', cost: 406, selling: 486, unit: 'Pcs', brand: 'Z' },
+      { id: 'san_1', name: 'Orissa Pan (OT Pan) 20"', category: 'SANITARY', size: '20"', cost: 390, selling: 430, unit: 'Pcs', brand: 'Ceramic' },
+      { id: 'san_2', name: 'Orissa Pan (OT Pan) 23"', category: 'SANITARY', size: '23"', cost: 490, selling: 540, unit: 'Pcs', brand: 'Ceramic' },
+      { id: 'san_3', name: 'EWC Commode Western', category: 'SANITARY', size: 'Standard', cost: 760, selling: 840, unit: 'Pcs', brand: 'Ceramic' },
+      { id: 'san_4', name: 'Wash Basin 18" x 12"', category: 'SANITARY', size: '18" x 12"', cost: 325, selling: 360, unit: 'Pcs', brand: 'Ceramic' },
+      { id: 'san_5', name: 'Pedestal Wash Basin Set', category: 'SANITARY', size: 'Standard', cost: 1400, selling: 1540, unit: 'Set', brand: 'Ceramic' },
+      { id: 'san_6', name: 'One Piece Designer Commode', category: 'SANITARY', size: 'Standard', cost: 4800, selling: 5280, unit: 'Pcs', brand: 'Ceramic' },
+
+      { id: 'elec_1', name: 'Reliance Motor 1x12 (Oil Cooled)', category: 'SUBMERSIBLE', size: '1 HP (1x12)', cost: 8500, selling: 9350, unit: 'Set', brand: 'Reliance' },
+      { id: 'elec_2', name: 'Sunrise Motor 1x14 (Water Cooled)', category: 'SUBMERSIBLE', size: '1 HP (1x14)', cost: 7090, selling: 7790, unit: 'Set', brand: 'Sunrise' },
+      { id: 'elec_3', name: 'Sunrise Motor 1.5x19 (Oil Cooled)', category: 'SUBMERSIBLE', size: '1.5 HP (1.5x19)', cost: 10785, selling: 11785, unit: 'Set', brand: 'Sunrise' },
+      { id: 'elec_4', name: 'Mahindra Motor 1x10 (Oil Cooled)', category: 'SUBMERSIBLE', size: '1 HP (1x10)', cost: 4400, selling: 4840, unit: 'Set', brand: 'Mahindra' },
+      { id: 'elec_5', name: 'Control Panel Starter 1 HP', category: 'SUBMERSIBLE', size: '1 HP', cost: 1350, selling: 1490, unit: 'Pcs', brand: 'Standard' },
+      { id: 'elec_6', name: 'Control Panel Starter 1.5 HP', category: 'SUBMERSIBLE', size: '1.5 HP', cost: 1500, selling: 1650, unit: 'Pcs', brand: 'Standard' },
+      { id: 'elec_7', name: 'Boring Cap (Dharkan) 6" x 1"', category: 'SUBMERSIBLE', size: '6" x 1"', cost: 185, selling: 200, unit: 'Pcs', brand: 'CI' },
+      { id: 'elec_8', name: 'Boring Cap (Dharkan) 6" x 1 1/4"', category: 'SUBMERSIBLE', size: '6" x 1 1/4"', cost: 185, selling: 200, unit: 'Pcs', brand: 'CI' },
+      { id: 'elec_9', name: 'Submersible Adaptor', category: 'SUBMERSIBLE', size: '1 1/4" x 1"', cost: 185, selling: 200, unit: 'Pcs', brand: 'CI' },
+      { id: 'elec_10', name: 'Column Pipe Submersible 1 1/4"', category: 'SUBMERSIBLE', size: '1 1/4"', cost: 148, selling: 170, unit: 'Pcs', brand: 'Column' },
+      { id: 'elec_11', name: 'Column Pipe Submersible 1 1/2"', category: 'SUBMERSIBLE', size: '1 1/2"', cost: 237, selling: 260, unit: 'Pcs', brand: 'Column' },
+      { id: 'elec_12', name: 'Crompton Submersible Flat Wire', category: 'ELECTRIC', size: '1.5 sq mm', cost: 34, selling: 40, unit: 'Meter', brand: 'Crompton' },
+      { id: 'elec_13', name: 'Crompton Submersible Flat Wire', category: 'ELECTRIC', size: '2.5 sq mm', cost: 50, selling: 60, unit: 'Meter', brand: 'Crompton' },
+      { id: 'elec_14', name: 'Starter Panel Local', category: 'ELECTRIC', size: 'Standard', cost: 750, selling: 825, unit: 'Pcs', brand: 'Starter' },
+
+      /* --- GLOSS ENAMEL PAINTS (From Notebook Page 1) --- */
+      { id: 'paint_ge_1', name: 'Gloss Enamel White Paint', category: 'PAINT', size: '500 ml', cost: 166.38, selling: 190, unit: 'Dabba', brand: 'Gloss Enamel' },
+      { id: 'paint_ge_2', name: 'Gloss Enamel White Paint', category: 'PAINT', size: '1 Litre', cost: 319.78, selling: 360, unit: 'Dabba', brand: 'Gloss Enamel' },
+      { id: 'paint_ge_3', name: 'Gloss Enamel Phiroj Blue Paint', category: 'PAINT', size: '500 ml', cost: 158.4, selling: 180, unit: 'Dabba', brand: 'Gloss Enamel' },
+      { id: 'paint_ge_4', name: 'Gloss Enamel Phiroj Blue Paint', category: 'PAINT', size: '1 Litre', cost: 295, selling: 350, unit: 'Dabba', brand: 'Gloss Enamel' },
+
+      /* --- PROMISE WHITE BASE INTERIOR (PROMIS W/T BASE INT) --- */
+      { id: 'paint_pr_int_1', name: 'Promise Interior White (Promis Int W/T)', category: 'PAINT', size: '1 Litre', cost: 198.24, selling: 230, unit: 'Bucket', brand: 'Promise' },
+      { id: 'paint_pr_int_4', name: 'Promise Interior White (Promis Int W/T)', category: 'PAINT', size: '4 Litre', cost: 750.48, selling: 975.6, unit: 'Bucket', brand: 'Promise' },
+      { id: 'paint_pr_int_10', name: 'Promise Interior White (Promis Int W/T)', category: 'PAINT', size: '10 Litre', cost: 1781.18, selling: 2215, unit: 'Bucket', brand: 'Promise' },
+      { id: 'paint_pr_int_20', name: 'Promise Interior White (Promis Int W/T)', category: 'PAINT', size: '20 Litre', cost: 3444.42, selling: 3944, unit: 'Bucket', brand: 'Promise' },
+
+      /* --- PROMISE EXTERIOR WHITE (PROMIS EXT W/T) --- */
+      { id: 'paint_pr_ext_1', name: 'Promise Exterior White (Promis Ext W/T)', category: 'PAINT', size: '1 Litre', cost: 226.56, selling: 250, unit: 'Bucket', brand: 'Promise' },
+      { id: 'paint_pr_ext_4', name: 'Promise Exterior White (Promis Ext W/T)', category: 'PAINT', size: '4 Litre', cost: 872.02, selling: 1160, unit: 'Bucket', brand: 'Promise' },
+      { id: 'paint_pr_ext_10', name: 'Promise Exterior White (Promis Ext W/T)', category: 'PAINT', size: '10 Litre', cost: 2103, selling: 2700, unit: 'Bucket', brand: 'Promise' },
+      { id: 'paint_pr_ext_20', name: 'Promise Exterior White (Promis Ext W/T)', category: 'PAINT', size: '20 Litre', cost: 4084.98, selling: 4500, unit: 'Bucket', brand: 'Promise' },
+
+      /* --- PROMISE SMART CHOICE WHITE INTERIOR (SMART W/T INT) --- */
+      { id: 'paint_sm_int_1', name: 'Smart Choice Interior White (Smart W/T Int)', category: 'PAINT', size: '1 Litre', cost: 126.26, selling: 138, unit: 'Bucket', brand: 'Smart Choice' },
+      { id: 'paint_sm_int_4', name: 'Smart Choice Interior White (Smart W/T Int)', category: 'PAINT', size: '4 Litre', cost: 480.26, selling: 624.33, unit: 'Bucket', brand: 'Smart Choice' },
+      { id: 'paint_sm_int_10', name: 'Smart Choice Interior White (Smart W/T Int)', category: 'PAINT', size: '10 Litre', cost: 1126.9, selling: 1464.97, unit: 'Bucket', brand: 'Smart Choice' },
+      { id: 'paint_sm_int_20', name: 'Smart Choice Interior White (Smart W/T Int)', category: 'PAINT', size: '20 Litre', cost: 2165.3, selling: 2814.89, unit: 'Bucket', brand: 'Smart Choice' },
+
+      /* --- PROMISE SMART CHOICE WHITE EXTERIOR (SMART W/T EXT) --- */
+      { id: 'paint_sm_ext_1', name: 'Smart Choice Exterior White (Smart W/T Ext)', category: 'PAINT', size: '1 Litre', cost: 160.48, selling: 208.24, unit: 'Bucket', brand: 'Smart Choice' },
+      { id: 'paint_sm_ext_4', name: 'Smart Choice Exterior White (Smart W/T Ext)', category: 'PAINT', size: '4 Litre', cost: 611.24, selling: 794.61, unit: 'Bucket', brand: 'Smart Choice' },
+      { id: 'paint_sm_ext_10', name: 'Smart Choice Exterior White (Smart W/T Ext)', category: 'PAINT', size: '10 Litre', cost: 1439.6, selling: 1871.48, unit: 'Bucket', brand: 'Smart Choice' },
+      { id: 'paint_sm_ext_20', name: 'Smart Choice Exterior White (Smart W/T Ext)', category: 'PAINT', size: '20 Litre', cost: 2596, selling: 3374.8, unit: 'Bucket', brand: 'Smart Choice' },
+
+      /* --- PRIMERS: SMART INT PRIMER (From Notebook Page 2) --- */
+      { id: 'paint_prm_smi_1', name: 'Smart Interior Primer', category: 'PAINT', size: '1 Litre', cost: 120, selling: 130, unit: 'Can', brand: 'Smart' },
+      { id: 'paint_prm_smi_4', name: 'Smart Interior Primer', category: 'PAINT', size: '4 Litre', cost: 416.54, selling: 510, unit: 'Bucket', brand: 'Smart' },
+      { id: 'paint_prm_smi_10', name: 'Smart Interior Primer', category: 'PAINT', size: '10 Litre', cost: 951.08, selling: 1120, unit: 'Bucket', brand: 'Smart' },
+      { id: 'paint_prm_smi_20', name: 'Smart Interior Primer', category: 'PAINT', size: '20 Litre', cost: 1638.9, selling: 2100, unit: 'Bucket', brand: 'Smart' },
+
+      /* --- PRIMERS: SMART EXT PRIMER --- */
+      { id: 'paint_prm_sme_1', name: 'Smart Exterior Primer', category: 'PAINT', size: '1 Litre', cost: 149.86, selling: 180, unit: 'Can', brand: 'Smart' },
+      { id: 'paint_prm_sme_4', name: 'Smart Exterior Primer', category: 'PAINT', size: '4 Litre', cost: 566.4, selling: 720, unit: 'Bucket', brand: 'Smart' },
+      { id: 'paint_prm_sme_10', name: 'Smart Exterior Primer', category: 'PAINT', size: '10 Litre', cost: 1170, selling: 1470, unit: 'Bucket', brand: 'Smart' },
+      { id: 'paint_prm_sme_20', name: 'Smart Exterior Primer', category: 'PAINT', size: '20 Litre', cost: 2153.44, selling: 2670, unit: 'Bucket', brand: 'Smart' },
+
+      /* --- PRIMERS: PROMISE INT PRIMER --- */
+      { id: 'paint_prm_pri_1', name: 'Promise Interior Primer', category: 'PAINT', size: '1 Litre', cost: 142.78, selling: 170, unit: 'Can', brand: 'Promise' },
+      { id: 'paint_prm_pri_4', name: 'Promise Interior Primer', category: 'PAINT', size: '4 Litre', cost: 527.46, selling: 610, unit: 'Bucket', brand: 'Promise' },
+
+      /* --- PRIMERS: PROMISE EXT PRIMER --- */
+      { id: 'paint_prm_pre_1', name: 'Promise Exterior Primer', category: 'PAINT', size: '1 Litre', cost: 177, selling: 220, unit: 'Can', brand: 'Promise' },
+      { id: 'paint_prm_pre_4', name: 'Promise Exterior Primer', category: 'PAINT', size: '4 Litre', cost: 660.8, selling: 710, unit: 'Bucket', brand: 'Promise' },
+      { id: 'paint_prm_pre_10', name: 'Promise Exterior Primer', category: 'PAINT', size: '10 Litre', cost: 1578.84, selling: 2000, unit: 'Bucket', brand: 'Promise' },
+      { id: 'paint_prm_pre_20', name: 'Promise Exterior Primer', category: 'PAINT', size: '20 Litre', cost: 3063.28, selling: 3500, unit: 'Bucket', brand: 'Promise' },
+
+      /* --- METAL & WOOD PRIMERS --- */
+      { id: 'paint_prm_met_500', name: 'Red Oxide Metal Primer', category: 'PAINT', size: '500 ml', cost: 127.44, selling: 140, unit: 'Dabba', brand: 'Red Oxide' },
+      { id: 'paint_prm_met_1l', name: 'Red Oxide Metal Primer', category: 'PAINT', size: '1 Litre', cost: 241.9, selling: 270, unit: 'Dabba', brand: 'Red Oxide' },
+      { id: 'paint_prm_wd_500', name: 'Wood Primer', category: 'PAINT', size: '500 ml', cost: 136, selling: 145, unit: 'Dabba', brand: 'Wood Primer' },
+      { id: 'paint_prm_wd_1l', name: 'Wood Primer', category: 'PAINT', size: '1 Litre', cost: 253.7, selling: 270, unit: 'Dabba', brand: 'Wood Primer' },
+
+      /* --- General Wall Putty & Accessories --- */
+      { id: 'paint_putty_40', name: 'Wall Putty White 40Kg', category: 'PAINT', size: '40 Kg', cost: 720, selling: 820, unit: 'Bag', brand: 'JK/Birla' },
+      { id: 'paint_roller_9', name: 'Paint Roller 9 Inch', category: 'PAINT', size: '9"', cost: 95, selling: 130, unit: 'Pcs', brand: 'Standard' },
+      { id: 'paint_brush_3', name: 'Paint Brush 3 Inch', category: 'PAINT', size: '3"', cost: 35, selling: 50, unit: 'Pcs', brand: 'Tiger' }
+    ];
+
+    const STORAGE_KEY = 'aparna_traders_pos_v2';
+    const CART_STORAGE_KEY = 'aparna_traders_cart_v1';
+    const PRIVACY_KEY = 'aparna_traders_privacy_v1';
+    const VOICE_MUTE_KEY = 'aparna_traders_mute_v1';
+
+    let products = [];
+    let cart = [];
+    let currentCategory = 'ALL';
+    let searchQuery = '';
+    let isOwnerMode = true; // true = Wholesale Cost + Margin, false = Retail only
+    let isVoiceMuted = false; // true = Silence TTS readouts, false = Speak rates
+
+    function initData() {
+      try {
+        const saved = localStorage.getItem(STORAGE_KEY);
+        if (saved) {
+          products = JSON.parse(saved);
+        } else {
+          // Seamless migration: import previous version items if any, merge with new paint items
+          const prevVer = localStorage.getItem('aparna_traders_pos_v1') || localStorage.getItem('bhagat_traders_pos_v3');
+          if (prevVer) {
+            const oldProducts = JSON.parse(prevVer);
+            const existingIds = new Set(oldProducts.map(p => p.id));
+            const newToAdd = DEFAULT_PRODUCTS.filter(p => !existingIds.has(p.id));
+            products = [...oldProducts, ...newToAdd];
+          } else {
+            products = [...DEFAULT_PRODUCTS];
+          }
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(products));
+        }
+
+        const savedCart = localStorage.getItem(CART_STORAGE_KEY) || localStorage.getItem('bhagat_traders_cart_v3');
+        if (savedCart) cart = JSON.parse(savedCart);
+
+        const savedPrivacy = localStorage.getItem(PRIVACY_KEY);
+        if (savedPrivacy !== null) isOwnerMode = savedPrivacy === 'true';
+
+        const savedMute = localStorage.getItem(VOICE_MUTE_KEY);
+        if (savedMute !== null) isVoiceMuted = savedMute === 'true';
+      } catch (e) {
+        products = [...DEFAULT_PRODUCTS];
+      }
+      updateCategoryCounts();
+      updatePrivacyUI();
+      updateVoiceMuteUI();
+      renderProducts();
+      updateCartBadge();
+    }
+
+    function toggleVoiceMute() {
+      isVoiceMuted = !isVoiceMuted;
+      localStorage.setItem(VOICE_MUTE_KEY, isVoiceMuted);
+      if (isVoiceMuted && 'speechSynthesis' in window) {
+        window.speechSynthesis.cancel();
+      }
+      updateVoiceMuteUI();
+      showToast(isVoiceMuted ? 'Voice Audio Muted' : 'Voice Audio Enabled', isVoiceMuted ? 'warn' : 'success');
+    }
+
+    function updateVoiceMuteUI() {
+      const muteIcon = document.getElementById('muteIcon');
+      const muteText = document.getElementById('muteStatusText');
+      const bannerIcon = document.getElementById('bannerMuteIcon');
+      const bannerText = document.getElementById('bannerMuteText');
+      const footerIcon = document.getElementById('footerVoiceIcon');
+
+      if (isVoiceMuted) {
+        if (muteIcon) muteIcon.className = 'fa-solid fa-volume-xmark text-rose-400';
+        if (muteText) muteText.innerText = 'Voice: Mute';
+        if (bannerIcon) bannerIcon.className = 'fa-solid fa-volume-xmark mr-1 text-rose-400';
+        if (bannerText) bannerText.innerText = 'Muted';
+        if (footerIcon) footerIcon.className = 'fa-solid fa-volume-xmark text-rose-400';
+      } else {
+        if (muteIcon) muteIcon.className = 'fa-solid fa-volume-high text-emerald-400';
+        if (muteText) muteText.innerText = 'Voice: On';
+        if (bannerIcon) bannerIcon.className = 'fa-solid fa-volume-high mr-1 text-emerald-400';
+        if (bannerText) bannerText.innerText = 'Sound ON';
+        if (footerIcon) footerIcon.className = 'fa-solid fa-volume-high text-emerald-400';
+      }
+    }
+
+    function updateCategoryCounts() {
+      const allCountEl = document.getElementById('count_ALL');
+      if (allCountEl) allCountEl.innerText = products.length;
+    }
+
+    function togglePrivacyMode() {
+      isOwnerMode = !isOwnerMode;
+      localStorage.setItem(PRIVACY_KEY, isOwnerMode);
+      updatePrivacyUI();
+      renderProducts();
+      renderBillItems();
+      showToast(isOwnerMode ? 'Owner Mode: Cost & Profit unlocked' : 'Customer Mode: Cost rates hidden', 'info');
+    }
+
+    function updatePrivacyUI() {
+      const icon = document.getElementById('privacyIcon');
+      const text = document.getElementById('privacyText');
+      const legend = document.getElementById('costRateLegend');
+      const profitRow = document.getElementById('billProfitRow');
+
+      if (isOwnerMode) {
+        icon.className = 'fa-solid fa-eye text-emerald-400';
+        text.innerText = 'Owner Mode';
+        if (legend) legend.classList.remove('hidden');
+        if (profitRow) profitRow.classList.remove('hidden');
+      } else {
+        icon.className = 'fa-solid fa-eye-slash text-rose-400';
+        text.innerText = 'Customer Mode';
+        if (legend) legend.classList.add('hidden');
+        if (profitRow) profitRow.classList.add('hidden');
+      }
+    }
+
+    function filterCategory(cat) {
+      currentCategory = cat;
+      document.querySelectorAll('.cat-pill').forEach(btn => {
+        btn.classList.remove('bg-sky-600', 'text-white');
+        btn.classList.add('bg-slate-800', 'text-slate-300');
+      });
+      event.currentTarget.classList.add('bg-sky-600', 'text-white');
+      event.currentTarget.classList.remove('bg-slate-800', 'text-slate-300');
+      renderProducts();
+    }
+
+    function handleSearch(val) {
+      searchQuery = val.trim().toLowerCase();
+      const clearBtn = document.getElementById('clearSearchBtn');
+      if (searchQuery.length > 0) {
+        clearBtn.classList.remove('hidden');
+      } else {
+        clearBtn.classList.add('hidden');
+      }
+      renderProducts();
+    }
+
+    function clearSearch() {
+      document.getElementById('searchInput').value = '';
+      searchQuery = '';
+      document.getElementById('clearSearchBtn').classList.add('hidden');
+      renderProducts();
+    }
+
+    function normalizeQueryTokens(raw) {
+      let q = raw.toLowerCase();
+
+      // Normalize spoken "by" phrases (e.g., "1 by pipe", "3 by 4", "1 by 2", "one by pipe")
+      q = q.replace(/\b(1|one|ek)\s*(by|baye|bay)\s*pipe\b/g, '1" pipe ')
+           .replace(/\b(1|one|ek)\s*(by|baye|bay)\s*(2|two|do)\b/g, '1/2 ')
+           .replace(/\b(3|three|teen)\s*(by|baye|bay)\s*(4|four|chaar|char)\b/g, '3/4 ')
+           .replace(/\b(1|one|ek)\s*(by|baye|bay)\s*(4|four|chaar|char)\b/g, '1 1/4 ')
+           .replace(/\b(\d+)\s*(by|baye|bay)\s*(\d+)\b/g, '$1/$3 ')
+           .replace(/\b(\d+)\s*(by|baye|bay)\s*pipe\b/g, '$1" pipe ')
+           .replace(/\b(\d+)\s*(by|baye|bay)\b/g, '$1" ');
+
+      // Standardize English/Hindi numbers, units and fractions
+      q = q.replace(/\bone\b|\bek\b/g, '1')
+           .replace(/\btwo\b|\bdo\b/g, '2')
+           .replace(/\bthree\b|\bteen\b/g, '3')
+           .replace(/\bfour\b|\bchaar\b|\bchar\b/g, '4')
+           .replace(/\bfive\b|\bpaanch\b/g, '5')
+           .replace(/\bhalf\b|\baadha\b|\badha\b/g, '1/2')
+           .replace(/\bthree fourth\b|\bpaun\b|\bpawn\b/g, '3/4')
+           .replace(/\bone and half\b|\bdedh\b/g, '1 1/2')
+           .replace(/\bone fourth\b|\bsawa\b/g, '1 1/4')
+           .replace(/\binch\b|\binches\b|\binchi\b/g, '"')
+           .replace(/\bfeet\b|\bfoot\b/g, 'ft')
+           .replace(/\bpi trap\b|\bptrap\b/g, 'p-trap')
+           .replace(/\bmoter\b|\bmotors\b/g, 'motor')
+           .replace(/\bltr\b|\bliter\b|\blitre\b/g, 'l')
+           .replace(/\bext\b|\bexter\b/g, 'exterior')
+           .replace(/\bint\b|\binter\b/g, 'interior')
+           .replace(/\b(ka|ki|ke|rate|kya|hai|batao|price|bataiye|dikhao|show|cost|of|the|please|item)\b/gi, '')
+           .trim();
+
+      // Split into clean search keywords
+      return q.split(/\s+/).filter(t => t.length > 0);
+    }
+
+    function renderProducts() {
+      const grid = document.getElementById('productGrid');
+      const emptyState = document.getElementById('emptyState');
+      const countText = document.getElementById('resultCountText');
+
+      const searchTokens = searchQuery ? normalizeQueryTokens(searchQuery) : [];
+
+      const filtered = products.filter(p => {
+        const matchesCat = currentCategory === 'ALL' || p.category === currentCategory;
+        if (!matchesCat) return false;
+
+        if (searchTokens.length === 0) return true;
+
+        const combined = `${p.name} ${p.size} ${p.category} ${p.brand || ''}`.toLowerCase();
+        return searchTokens.every(token => {
+          // Precise fractional & dimensional matching
+          if (token === '1' && (combined.includes('1"') || combined.includes('1 ') || combined.includes('1 l') || combined.includes('1-'))) return true;
+          if (token === '1"' && (combined.includes('1"') || combined.includes('1 inchi') || combined.includes('1 inch'))) return true;
+          if (token === '3/4' && combined.includes('3/4')) return true;
+          if (token === '1/2' && combined.includes('1/2')) return true;
+          if (token === '1 1/4' && (combined.includes('1 1/4') || combined.includes('1 1/4"'))) return true;
+          if (token === '4' && (combined.includes('4"') || combined.includes('4 l') || combined.includes('4 '))) return true;
+          if (token === '10' && (combined.includes('10 l') || combined.includes('10\'') || combined.includes('10ft'))) return true;
+          if (token === '20' && (combined.includes('20 l') || combined.includes('20"'))) return true;
+          return combined.includes(token);
+        });
+      });
+
+      countText.innerText = `Showing: ${filtered.length} of ${products.length} products`;
+
+      if (filtered.length === 0) {
+        grid.innerHTML = '';
+        emptyState.classList.remove('hidden');
+        return;
+      }
+
+      emptyState.classList.add('hidden');
+      grid.innerHTML = filtered.map(item => {
+        const profit = (Number(item.selling) - Number(item.cost)).toFixed(1);
+        const marginPct = item.cost > 0 ? Math.round((profit / item.cost) * 100) : 0;
+
+        return `
+          <div class="pro-card border border-slate-800/90 hover:border-sky-500/80 rounded-2xl p-4 transition-all duration-200 flex flex-col justify-between group">
+            <div>
+              <div class="flex items-start justify-between gap-2 mb-2">
+                <span class="inline-block px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider rounded-md ${getCategoryBadgeStyle(item.category)}">
+                  ${formatCategory(item.category)}
+                </span>
+                <span class="text-[11px] font-mono-num font-bold text-slate-300 bg-slate-800/90 border border-slate-700 px-2 py-0.5 rounded-lg shadow-sm">
+                  ${item.size || 'Standard'}
+                </span>
+              </div>
+
+              <h4 class="font-bold text-white text-sm leading-snug group-hover:text-sky-300 transition">
+                ${highlightSearch(item.name, searchQuery)}
+              </h4>
+              ${item.brand ? `<p class="text-[11px] text-slate-400 mt-1 font-medium"><i class="fa-solid fa-tag text-[9px] mr-1 text-slate-500"></i>${item.brand}</p>` : ''}
+            </div>
+
+            <!-- Price Breakdown Box -->
+            <div class="mt-3 pt-3 border-t border-slate-800/80 flex items-end justify-between">
+              <div>
+                <div class="text-[10px] text-slate-400 font-semibold uppercase tracking-wider">Retail Selling Price</div>
+                <div class="text-xl font-extrabold font-mono-num text-sky-400 leading-tight">
+                  ₹${item.selling} <span class="text-xs font-normal text-slate-400">/${item.unit || 'Pcs'}</span>
+                </div>
+
+                <!-- Cost Rate: Visible only in Owner Mode -->
+                ${isOwnerMode ? `
+                  <div class="text-[11px] font-mono-num font-bold text-rose-400 mt-1 flex items-center gap-1.5">
+                    <span>Cost: ₹${item.cost}</span>
+                    <span class="text-[10px] text-emerald-400 bg-emerald-950/60 border border-emerald-800/60 px-1.5 py-0.2 rounded font-semibold">+₹${profit} (${marginPct}%)</span>
+                  </div>
+                ` : ''}
+              </div>
+
+              <!-- Quick Action buttons -->
+              <div class="flex items-center gap-1">
+                <button onclick="addToBillCart('${item.id}')" title="Add to Estimate Bill" class="w-8 h-8 rounded-xl bg-sky-600/20 hover:bg-sky-600 text-sky-300 hover:text-white border border-sky-500/40 flex items-center justify-center transition active:scale-90 font-bold shadow-sm">
+                  <i class="fa-solid fa-plus text-xs"></i>
+                </button>
+                <button onclick="openEditModal('${item.id}')" title="Edit Product" class="w-8 h-8 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-300 hover:text-white flex items-center justify-center transition active:scale-90 shadow-sm">
+                  <i class="fa-solid fa-pen text-xs"></i>
+                </button>
+                <button onclick="deleteProduct('${item.id}')" title="Delete Product" class="w-8 h-8 rounded-xl bg-rose-950/40 hover:bg-rose-900/60 text-rose-400 flex items-center justify-center transition active:scale-90 border border-rose-900/30">
+                  <i class="fa-solid fa-trash-can text-xs"></i>
+                </button>
+              </div>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function formatCategory(cat) {
+      switch(cat) {
+        case 'CP_FITTINGS': return 'CP Taps';
+        case 'SUBMERSIBLE': return 'Motors';
+        case 'SANITARY': return 'Sanitary';
+        default: return cat;
+      }
+    }
+
+    function getCategoryBadgeStyle(cat) {
+      switch(cat) {
+        case 'CPVC': return 'bg-amber-500/20 text-amber-300 border border-amber-500/30';
+        case 'UPVC': return 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/30';
+        case 'PVC': return 'bg-sky-500/20 text-sky-300 border border-sky-500/30';
+        case 'SANITARY': return 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30';
+        case 'CP_FITTINGS': return 'bg-indigo-500/20 text-indigo-300 border border-indigo-500/30';
+        case 'SUBMERSIBLE': return 'bg-purple-500/20 text-purple-300 border border-purple-500/30';
+        case 'ELECTRIC': return 'bg-yellow-500/20 text-yellow-300 border border-yellow-500/30';
+        case 'PAINT': return 'bg-rose-500/20 text-rose-300 border border-rose-500/30';
+        default: return 'bg-slate-700 text-slate-300';
+      }
+    }
+
+    function highlightSearch(text, q) {
+      if (!q) return text;
+      const tokens = normalizeQueryTokens(q);
+      if (tokens.length === 0) return text;
+      let highlighted = text;
+      tokens.forEach(tok => {
+        const regex = new RegExp(`(${tok})`, 'gi');
+        highlighted = highlighted.replace(regex, '<span class="text-sky-300 underline font-extrabold">$1</span>');
+      });
+      return highlighted;
+    }
+
+    let recognition = null;
+    let isListening = false;
+
+    function playBeep(freq = 600, duration = 0.12) {
+      if (isVoiceMuted) return;
+      try {
+        const ctx = new (window.AudioContext || window.webkitAudioContext)();
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.frequency.value = freq;
+        osc.start();
+        gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + duration);
+        osc.stop(ctx.currentTime + duration);
+      } catch(e) {}
+    }
+
+    function toggleVoiceSearch() {
+      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+
+      if (!SpeechRecognition) {
+        showToast('Speech Recognition not supported in this browser. Please type to search.', 'warn');
+        return;
+      }
+
+      if (isListening) {
+        stopVoiceRecognition();
+        return;
+      }
+
+      try {
+        recognition = new SpeechRecognition();
+        recognition.lang = 'en-IN';
+        recognition.interimResults = true;
+        recognition.maxAlternatives = 3;
+        recognition.continuous = false;
+
+        const voiceBtn = document.getElementById('voiceBtn');
+        const feedbackBanner = document.getElementById('voiceFeedbackBanner');
+        const capturedText = document.getElementById('voiceCapturedText');
+        const promptTitle = document.getElementById('voicePromptTitle');
+
+        recognition.onstart = () => {
+          isListening = true;
+          playBeep(880, 0.15);
+          voiceBtn.classList.remove('from-sky-600', 'to-indigo-600');
+          voiceBtn.classList.add('from-rose-600', 'to-rose-700', 'ring-2', 'ring-rose-400');
+          document.getElementById('micIcon').className = 'fa-solid fa-microphone-lines text-white animate-pulse';
+          document.getElementById('voiceStatusText').innerText = 'Listening...';
+          feedbackBanner.classList.remove('hidden');
+          promptTitle.innerText = 'Listening...';
+          capturedText.innerText = 'Say "1 inchi pipe", "p trap", "motor", "wall mixer"...';
+        };
+
+        recognition.onresult = (event) => {
+          let transcript = '';
+          for (let i = event.resultIndex; i < event.results.length; ++i) {
+            transcript += event.results[i][0].transcript;
+          }
+
+          capturedText.innerText = `"${transcript}"`;
+          document.getElementById('searchInput').value = transcript;
+          handleSearch(transcript);
+
+          if (event.results[0].isFinal) {
+            playBeep(1200, 0.1);
+            showToast(`Voice: "${transcript}"`, 'success');
+            speakMatchResponse(transcript);
+          }
+        };
+
+        recognition.onerror = (event) => {
+          stopVoiceRecognition();
+          if (event.error === 'not-allowed') {
+            showToast('Microphone permission blocked in browser settings.', 'warn');
+          } else {
+            showToast('Could not hear clearly. Please try again.', 'info');
+          }
+        };
+
+        recognition.onend = () => {
+          stopVoiceRecognition();
+        };
+
+        recognition.start();
+      } catch (err) {
+        showToast('Microphone initialization failed.', 'warn');
+      }
+    }
+
+    function stopVoiceRecognition() {
+      isListening = false;
+      if (recognition) {
+        try { recognition.stop(); } catch(e) {}
+      }
+      const voiceBtn = document.getElementById('voiceBtn');
+      voiceBtn.classList.add('from-sky-600', 'to-indigo-600');
+      voiceBtn.classList.remove('from-rose-600', 'to-rose-700', 'ring-2', 'ring-rose-400');
+      document.getElementById('micIcon').className = 'fa-solid fa-microphone text-sm';
+      document.getElementById('voiceStatusText').innerText = 'Voice Search';
+      document.getElementById('voiceFeedbackBanner').classList.add('hidden');
+    }
+
+    function speakText(msg) {
+      if (isVoiceMuted) return; // Silent mode active
+      if ('speechSynthesis' in window) {
+        window.speechSynthesis.cancel();
+        const utterance = new SpeechSynthesisUtterance(msg);
+        utterance.rate = 1.05;
+        utterance.pitch = 1.0;
+        window.speechSynthesis.speak(utterance);
+      }
+    }
+
+    function speakMatchResponse(query) {
+      if (isVoiceMuted) return;
+      const tokens = normalizeQueryTokens(query);
+      const match = products.find(p => {
+        const str = `${p.name} ${p.size}`.toLowerCase();
+        return tokens.every(t => str.includes(t));
+      });
+
+      if (match) {
+        speakText(`${match.name}, ${match.size}. Retail price is ${match.selling} rupees.`);
+      }
+    }
+
+    function speakSelectedSummary() {
+      if (isVoiceMuted) {
+        showToast('Voice is currently muted. Unmute to listen.', 'warn');
+        return;
+      }
+      const topItems = products.slice(0, 3);
+      if (topItems.length > 0) {
+        speakText(`Top listed item is ${topItems[0].name}, rate ${topItems[0].selling} rupees.`);
+      }
+    }
+
+    function openAddModal() {
+      document.getElementById('editProductId').value = '';
+      document.getElementById('modalTitle').innerHTML = '<i class="fa-solid fa-plus text-sky-400"></i> Add New Product';
+      document.getElementById('productForm').reset();
+      document.getElementById('formCategory').value = currentCategory === 'ALL' ? 'CPVC' : currentCategory;
+      document.getElementById('productModal').classList.remove('hidden');
+    }
+
+    function openEditModal(id) {
+      const p = products.find(x => x.id === id);
+      if (!p) return;
+      document.getElementById('editProductId').value = p.id;
+      document.getElementById('modalTitle').innerHTML = '<i class="fa-solid fa-pen-to-square text-sky-400"></i> Edit Product';
+      document.getElementById('formName').value = p.name;
+      document.getElementById('formCategory').value = p.category;
+      document.getElementById('formSize').value = p.size || '';
+      document.getElementById('formCost').value = p.cost;
+      document.getElementById('formSelling').value = p.selling;
+      document.getElementById('formUnit').value = p.unit || 'Pcs';
+      document.getElementById('formBrand').value = p.brand || '';
+      document.getElementById('productModal').classList.remove('hidden');
+    }
+
+    function closeProductModal() {
+      document.getElementById('productModal').classList.add('hidden');
+    }
+
+    function saveProduct(e) {
+      e.preventDefault();
+      const id = document.getElementById('editProductId').value;
+      const name = document.getElementById('formName').value.trim();
+      const category = document.getElementById('formCategory').value;
+      const size = document.getElementById('formSize').value.trim();
+      const cost = parseFloat(document.getElementById('formCost').value) || 0;
+      const selling = parseFloat(document.getElementById('formSelling').value) || 0;
+      const unit = document.getElementById('formUnit').value.trim() || 'Pcs';
+      const brand = document.getElementById('formBrand').value.trim();
+
+      if (id) {
+        const idx = products.findIndex(x => x.id === id);
+        if (idx !== -1) {
+          products[idx] = { ...products[idx], name, category, size, cost, selling, unit, brand };
+          showToast('Product updated successfully!', 'success');
+        }
+      } else {
+        const newProduct = {
+          id: 'prod_' + Date.now(),
+          name,
+          category,
+          size,
+          cost,
+          selling,
+          unit,
+          brand
+        };
+        products.unshift(newProduct);
+        showToast('New product added to inventory!', 'success');
+      }
+
+      saveToStorage();
+      updateCategoryCounts();
+      closeProductModal();
+      renderProducts();
+    }
+
+    function deleteProduct(id) {
+      const p = products.find(x => x.id === id);
+      if (!p) return;
+
+      showConfirmDialog(`Are you sure you want to delete "${p.name} (${p.size})"?`, () => {
+        products = products.filter(x => x.id !== id);
+        saveToStorage();
+        updateCategoryCounts();
+        renderProducts();
+        showToast('Product removed from database.', 'warn');
+      });
+    }
+
+    function saveToStorage() {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(products));
+    }
+
+    function addToBillCart(prodId) {
+      const p = products.find(x => x.id === prodId);
+      if (!p) return;
+
+      const existing = cart.find(c => c.productId === prodId);
+      if (existing) {
+        existing.qty += 1;
+      } else {
+        cart.push({
+          productId: p.id,
+          name: p.name,
+          size: p.size,
+          cost: p.cost,
+          rate: p.selling,
+          unit: p.unit || 'Pcs',
+          qty: 1
+        });
+      }
+      saveCart();
+      updateCartBadge();
+      showToast(`Added "${p.name}" to estimate!`, 'success');
+    }
+
+    function updateCartQty(idx, change) {
+      if (cart[idx]) {
+        cart[idx].qty += change;
+        if (cart[idx].qty <= 0) {
+          cart.splice(idx, 1);
+        }
+        saveCart();
+        renderBillItems();
+        updateCartBadge();
+      }
+    }
+
+    function saveCart() {
+      localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(cart));
+    }
+
+    function updateCartBadge() {
+      const totalItems = cart.reduce((sum, item) => sum + item.qty, 0);
+      document.getElementById('cartCountBadge').innerText = totalItems;
+    }
+
+    function toggleBillModal() {
+      const modal = document.getElementById('billModal');
+      if (modal.classList.contains('hidden')) {
+        renderBillItems();
+        modal.classList.remove('hidden');
+      } else {
+        modal.classList.add('hidden');
+      }
+    }
+
+    function renderBillItems() {
+      const container = document.getElementById('billItemsContainer');
+      const grandTotalEl = document.getElementById('billGrandTotal');
+      const totalProfitEl = document.getElementById('billTotalProfit');
+
+      if (cart.length === 0) {
+        container.innerHTML = `
+          <div class="py-12 text-center text-slate-500">
+            <i class="fa-solid fa-receipt text-3xl mb-2"></i>
+            <p>No items in current estimate.</p>
+            <p class="text-[11px] mt-1">Tap <b>+</b> on any item to add it here.</p>
+          </div>
+        `;
+        grandTotalEl.innerText = '₹0';
+        totalProfitEl.innerText = '₹0';
+        return;
+      }
+
+      let grandTotal = 0;
+      let totalCost = 0;
+
+      container.innerHTML = cart.map((item, idx) => {
+        const itemTotal = item.rate * item.qty;
+        grandTotal += itemTotal;
+        totalCost += (item.cost * item.qty);
+
+        return `
+          <div class="flex items-center justify-between p-3 bg-slate-800/80 border border-slate-700 rounded-xl">
+            <div class="flex-1 pr-2">
+              <div class="font-bold text-white text-xs">${item.name} (${item.size || 'Std'})</div>
+              <div class="text-[11px] text-slate-400 mt-0.5">
+                ₹${item.rate} × ${item.qty} ${item.unit}
+                ${isOwnerMode ? `<span class="text-rose-400 ml-1.5">(Cost: ₹${item.cost * item.qty})</span>` : ''}
+              </div>
+            </div>
+
+            <div class="flex items-center gap-2">
+              <div class="flex items-center border border-slate-600 rounded-lg overflow-hidden bg-slate-900">
+                <button onclick="updateCartQty(${idx}, -1)" class="w-6 h-6 flex items-center justify-center text-slate-300 hover:bg-slate-700 font-bold">-</button>
+                <span class="w-7 text-center font-mono-num font-bold text-white text-xs">${item.qty}</span>
+                <button onclick="updateCartQty(${idx}, 1)" class="w-6 h-6 flex items-center justify-center text-slate-300 hover:bg-slate-700 font-bold">+</button>
+              </div>
+
+              <div class="w-16 text-right font-mono-num font-bold text-sky-400 text-xs">
+                ₹${itemTotal.toFixed(0)}
+              </div>
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      grandTotalEl.innerText = `₹${grandTotal.toFixed(0)}`;
+      totalProfitEl.innerText = `₹${(grandTotal - totalCost).toFixed(0)}`;
+    }
+
+    function clearBillCart() {
+      if (cart.length === 0) return;
+      showConfirmDialog('Do you want to clear this entire estimate?', () => {
+        cart = [];
+        saveCart();
+        renderBillItems();
+        updateCartBadge();
+        showToast('Estimate cleared!', 'info');
+      });
+    }
+
+    function shareBillWhatsapp() {
+      if (cart.length === 0) {
+        showToast('Estimate is empty!', 'warn');
+        return;
+      }
+
+      let text = `*📋 Aparna Trader's - Estimate / Price Slip*\n----------------------------------\n`;
+      let grandTotal = 0;
+
+      cart.forEach((it, i) => {
+        const itemTot = it.rate * it.qty;
+        grandTotal += itemTot;
+        text += `${i+1}. ${it.name} (${it.size}) - ${it.qty} ${it.unit} @ ₹${it.rate} = *₹${itemTot}*\n`;
+      });
+
+      text += `----------------------------------\n*Total Amount: ₹${grandTotal}*\n\nThank you for choosing Aparna Trader's! 🙏`;
+      const encoded = encodeURIComponent(text);
+      window.open(`https://api.whatsapp.com/send?text=${encoded}`, '_blank');
+    }
+
+    function openAiChatModal() {
+      document.getElementById('aiModal').classList.remove('hidden');
+      document.getElementById('aiUserQuery').focus();
+    }
+
+    function closeAiChatModal() {
+      document.getElementById('aiModal').classList.add('hidden');
+    }
+
+    async function sendAiMessage() {
+      const input = document.getElementById('aiUserQuery');
+      const text = input.value.trim();
+      if (!text) return;
+
+      appendAiMessage('user', text);
+      input.value = '';
+
+      const tokens = normalizeQueryTokens(text);
+      const matches = products.filter(p => {
+        const combined = `${p.name} ${p.size} ${p.category}`.toLowerCase();
+        return tokens.every(t => combined.includes(t));
+      }).slice(0, 4);
+
+      if (matches.length > 0) {
+        let reply = `Found ${matches.length} matching items:\n\n`;
+        matches.forEach(item => {
+          reply += `🔹 *${item.name} (${item.size})*\n`;
+          reply += `• *Selling Price:* ₹${item.selling} / ${item.unit}\n`;
+          if (isOwnerMode) {
+            reply += `• *Cost:* ₹${item.cost} (Profit: ₹${(item.selling - item.cost).toFixed(1)})\n`;
+          }
+          reply += `\n`;
+        });
+        appendAiMessage('ai', reply);
+        if (!isVoiceMuted) {
+          speakText(`${matches[0].name} is ${matches[0].selling} rupees.`);
+        }
+      } else {
+        appendAiMessage('ai', 'Checking inventory...');
+        try {
+          const geminiReply = await queryGeminiAI(text);
+          const chatBox = document.getElementById('aiChatBox');
+          if (chatBox.lastElementChild) {
+            chatBox.removeChild(chatBox.lastElementChild);
+          }
+          appendAiMessage('ai', geminiReply);
+          if (!isVoiceMuted) {
+            speakText(geminiReply.replace(/\*/g, ''));
+          }
+        } catch (e) {
+          appendAiMessage('ai', `Sorry, no exact item matched "${text}". Try searching with terms like "pipe", "elbow", or "socket".`);
+        }
+      }
+    }
+
+    function appendAiMessage(sender, text) {
+      const chatBox = document.getElementById('aiChatBox');
+      const isUser = sender === 'user';
+
+      const div = document.createElement('div');
+      div.className = `flex items-start gap-2 ${isUser ? 'flex-row-reverse' : ''}`;
+
+      const avatar = document.createElement('div');
+      avatar.className = `w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 text-[10px] ${isUser ? 'bg-indigo-600 text-white' : 'bg-sky-600 text-white'}`;
+      avatar.innerText = isUser ? 'You' : 'AI';
+
+      const bubble = document.createElement('div');
+      bubble.className = `p-3 rounded-2xl shadow-sm max-w-[85%] text-xs leading-relaxed whitespace-pre-wrap ${
+        isUser 
+          ? 'bg-sky-600 text-white rounded-tr-none' 
+          : 'bg-slate-800 border border-slate-700 text-slate-200 rounded-tl-none'
+      }`;
+      bubble.innerHTML = text.replace(/\*(.*?)\*/g, '<b>$1</b>');
+
+      div.appendChild(avatar);
+      div.appendChild(bubble);
+      chatBox.appendChild(div);
+      chatBox.scrollTop = chatBox.scrollHeight;
+    }
+
+    async function queryGeminiAI(userPrompt) {
+      const apiKey = ""; // Canvas runtime provides the key automatically
+      const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${apiKey}`;
+
+      const inventorySample = products.slice(0, 60).map(p => `${p.name} ${p.size}: Cost ₹${p.cost}, Sell ₹${p.selling}`).join('; ');
+
+      const systemInstruction = `You are a helpful smart shopkeeper assistant for Aparna Trader's hardware, plumbing and sanitary store.
+Answer clearly in short English directly specifying the requested prices.
+Inventory reference: ${inventorySample}`;
+
+      const payload = {
+        contents: [{ parts: [{ text: userPrompt }] }],
+        systemInstruction: { parts: [{ text: systemInstruction }] }
+      };
+
+      const resp = await fetch(apiUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+
+      const data = await resp.json();
+      return data?.candidates?.[0]?.content?.parts?.[0]?.text || "Price could not be retrieved.";
+    }
+
+    function exportBackup() {
+      const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(products, null, 2));
+      const dl = document.createElement('a');
+      dl.setAttribute("href", dataStr);
+      dl.setAttribute("download", `Aparna_Traders_Backup_${new Date().toISOString().slice(0,10)}.json`);
+      document.body.appendChild(dl);
+      dl.click();
+      dl.remove();
+      showToast('Database backup downloaded!', 'success');
+    }
+
+    function importBackup(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        try {
+          const imported = JSON.parse(e.target.result);
+          if (Array.isArray(imported)) {
+            products = imported;
+            saveToStorage();
+            updateCategoryCounts();
+            renderProducts();
+            showToast('Backup restored successfully!', 'success');
+          } else {
+            showToast('Invalid backup file format.', 'warn');
+          }
+        } catch (err) {
+          showToast('Failed to parse backup file.', 'warn');
+        }
+      };
+      reader.readAsText(file);
+    }
+
+    function showConfirmDialog(message, onConfirm) {
+      const existing = document.getElementById('customConfirmModal');
+      if (existing) existing.remove();
+
+      const modal = document.createElement('div');
+      modal.id = 'customConfirmModal';
+      modal.className = 'fixed inset-0 bg-slate-950/80 backdrop-blur-md z-50 flex items-center justify-center p-4 animate-fadeIn';
+      modal.innerHTML = `
+        <div class="bg-slate-900 border border-slate-700 w-full max-w-xs rounded-2xl p-5 shadow-2xl text-center">
+          <div class="w-12 h-12 rounded-full bg-rose-500/20 text-rose-400 mx-auto flex items-center justify-center mb-3 text-lg">
+            <i class="fa-solid fa-triangle-exclamation"></i>
+          </div>
+          <h4 class="font-bold text-white text-sm">Please Confirm</h4>
+          <p class="text-xs text-slate-400 mt-1 mb-4 leading-relaxed">${message}</p>
+          <div class="flex items-center gap-2">
+            <button id="confirmCancelBtn" class="flex-1 py-2 rounded-xl border border-slate-700 text-slate-300 text-xs font-semibold hover:bg-slate-800">Cancel</button>
+            <button id="confirmOkBtn" class="flex-1 py-2 rounded-xl bg-rose-600 hover:bg-rose-500 text-white text-xs font-bold shadow-md shadow-rose-600/30">Confirm</button>
+          </div>
+        </div>
+      `;
+      document.body.appendChild(modal);
+
+      document.getElementById('confirmCancelBtn').onclick = () => modal.remove();
+      document.getElementById('confirmOkBtn').onclick = () => {
+        modal.remove();
+        onConfirm();
+      };
+    }
+
+    let toastTimeout;
+    function showToast(msg, type = 'info') {
+      const toast = document.getElementById('toast');
+      const toastMsg = document.getElementById('toastMsg');
+      const toastIcon = document.getElementById('toastIcon');
+
+      toastMsg.innerText = msg;
+      if (type === 'success') toastIcon.className = 'fa-solid fa-circle-check text-emerald-400';
+      else if (type === 'warn') toastIcon.className = 'fa-solid fa-triangle-exclamation text-amber-400';
+      else toastIcon.className = 'fa-solid fa-circle-info text-sky-400';
+
+      toast.classList.remove('opacity-0', 'pointer-events-none');
+      clearTimeout(toastTimeout);
+      toastTimeout = setTimeout(() => {
+        toast.classList.add('opacity-0', 'pointer-events-none');
+      }, 2500);
+    }
+
+    window.onload = function () {
+      initData();
+    };
+  </script>
+</body>
+</html>
