@@ -1,0 +1,20 @@
+{
+  "id": "./",
+  "name": "Aparna Traders Smart AI",
+  "short_name": "Aparna Smart AI",
+  "description": "Aparna Traders Price List, Voice Assistant and Customer Khata",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0b0f17",
+  "theme_color": "#0b0f17",
+  "icons": [
+    {
+      "src": "./app-icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}

@@ -3,10 +3,23 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="theme-color" content="#0b0f17">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="Aparna Smart AI">
+  <link rel="manifest" href="./manifest.json">
+  <link rel="icon" href="./app-icon.svg" type="image/svg+xml">
   <title>Aparna Traders - Smart AI Price List</title>
   <!-- Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
+window.addEventListener('error', function(e) {
+  alert("APARNA AI ERROR:\n" + e.message + "\nLine: " + e.lineno);
+});
+window.addEventListener('unhandledrejection', function(e) {
+  alert("APARNA AI PROMISE ERROR:\n" + e.reason);
+});
+
     tailwind.config = {
       darkMode: 'class',
       theme: {
@@ -173,6 +186,13 @@
               <span class="w-1 bg-black rounded-full voice-wave" style="animation-delay: 0.3s"></span>
               <span class="w-1 bg-black rounded-full voice-wave" style="animation-delay: 0.2s"></span>
             </div>
+          </button>
+          <button
+            id="muteVoiceBtn"
+            onclick="toggleVoiceMute()"
+            class="ml-2 flex-shrink-0 w-10 h-10 rounded-xl bg-slate-700 text-white flex items-center justify-center shadow active:scale-95 transition-all focus:outline-none"
+            aria-label="Mute Voice">
+            <span id="muteVoiceIcon">🔊</span>
           </button>
         </div>
         <!-- Live Voice Speech Feedback -->
@@ -369,7 +389,180 @@
       </div>
     </section>
 
-    <!-- VIEW 5: PROFILE VIEW -->
+    <!-- VIEW 5: CUSTOMER KHATA VIEW -->
+    <section id="view-khata" class="view-panel hidden space-y-4">
+
+      <div class="flex items-center justify-between">
+        <div>
+          <h2 class="text-lg font-extrabold text-white">Customer Khata</h2>
+          <p class="text-xs text-slate-400">Customer bills, payments & dues</p>
+        </div>
+        <button onclick="openAddCustomerKhata()" class="px-3 py-2 bg-amber-500 text-black rounded-xl text-xs font-bold active:scale-95">
+          + Add Customer
+        </button>
+      </div>
+
+      <!-- Khata Summary -->
+      <div class="grid grid-cols-3 gap-2">
+        <div class="bg-dark-850 border border-slate-800 rounded-xl p-3 text-center">
+          <p class="text-[9px] text-slate-400 uppercase">Customers</p>
+          <p id="khataCustomerCount" class="text-lg font-black text-white">0</p>
+        </div>
+        <div class="bg-dark-850 border border-slate-800 rounded-xl p-3 text-center">
+          <p class="text-[9px] text-slate-400 uppercase">Total Bill</p>
+          <p id="khataBillTotal" class="text-lg font-black text-amber-400">₹0</p>
+        </div>
+        <div class="bg-dark-850 border border-slate-800 rounded-xl p-3 text-center">
+          <p class="text-[9px] text-slate-400 uppercase">Total Dues</p>
+          <p id="khataBalanceTotal" class="text-lg font-black text-red-400">₹0</p>
+        </div>
+      </div>
+
+      <!-- Customer Search -->
+      <div class="relative">
+        <input
+          id="khataSearchInput"
+          type="text"
+          placeholder="Customer name ya mobile search..."
+          oninput="renderKhataCustomers()"
+          class="w-full px-4 py-3 bg-dark-850 border border-slate-700 rounded-2xl text-sm text-white placeholder-slate-500 focus:outline-none focus:border-amber-500">
+      </div>
+
+      <!-- Customer List -->
+      <div id="khataCustomerList" class="space-y-2">
+        <div class="bg-dark-850 border border-slate-800 rounded-2xl p-5 text-center">
+          <p class="text-sm text-slate-300">Abhi koi customer khata nahi hai.</p>
+          <p class="text-xs text-slate-500 mt-1">+ Add Customer se pehla customer add karein.</p>
+        </div>
+      </div>
+
+    </section>
+
+
+    <!-- CUSTOMER KHATA DETAIL MODAL -->
+    <div id="khataDetailModal" class="fixed inset-0 z-[100] hidden bg-black/80 backdrop-blur-sm p-4 overflow-y-auto">
+      <div class="max-w-md mx-auto mt-8 bg-dark-900 border border-slate-700 rounded-3xl shadow-2xl overflow-hidden">
+
+        <div class="p-4 border-b border-slate-800 flex items-center justify-between">
+          <div>
+            <p class="text-lg font-black text-white" id="khataDetailName">Customer</p>
+            <p class="text-xs text-slate-400" id="khataDetailMobile">Mobile</p>
+          </div>
+          <button onclick="closeKhataDetail()" class="w-9 h-9 rounded-full bg-slate-800 text-slate-300 text-xl">
+            ×
+          </button>
+        </div>
+
+        <div class="p-4 space-y-3">
+
+          <!-- Summary -->
+          <div class="grid grid-cols-3 gap-2">
+            <div class="bg-dark-850 rounded-xl p-3 text-center">
+              <p class="text-[9px] text-slate-500">BILL</p>
+              <p id="khataDetailBill" class="text-sm font-black text-white">₹0</p>
+            </div>
+            <div class="bg-dark-850 rounded-xl p-3 text-center">
+              <p class="text-[9px] text-slate-500">PAYMENT RECEIVED</p>
+              <p id="khataDetailPaid" class="text-sm font-black text-emerald-400">₹0</p>
+            </div>
+            <div class="bg-dark-850 rounded-xl p-3 text-center">
+              <p class="text-[9px] text-slate-500">TOTAL DUES</p>
+              <p id="khataDetailBalance" class="text-sm font-black text-red-400">₹0</p>
+            </div>
+          </div>
+
+          <!-- New Bill -->
+          <div class="bg-dark-850 border border-slate-800 rounded-2xl p-3">
+            <p class="text-xs font-bold text-white mb-3">+ New Bill Item</p>
+
+            <div class="flex gap-2 mb-2">
+              <input id="khataProductSearch"
+                type="text"
+                placeholder="Product name / size..."
+                oninput="searchKhataProduct()"
+                class="flex-1 px-3 py-3 bg-dark-900 border border-slate-700 rounded-xl text-sm text-white">
+
+              <button id="khataVoiceBtn"
+                onclick="startKhataProductVoice()"
+                class="w-12 rounded-xl bg-amber-500 text-black font-black text-lg active:scale-95"
+                title="AI Voice Product Search">
+                🎤
+              </button>
+            </div>
+
+            <select id="khataProductSelect"
+              onchange="khataProductChanged()"
+              class="w-full px-3 py-2 mb-2 bg-dark-900 border border-slate-700 rounded-xl text-xs text-white">
+              <option value="">Product select karein</option>
+            </select>
+
+            <div class="grid grid-cols-2 gap-2">
+              <input id="khataQtyInput"
+                type="number"
+                min="0.01"
+                step="0.01"
+                value="1"
+                oninput="calculateKhataItemTotal()"
+                placeholder="Quantity"
+                class="w-full px-3 py-3 bg-dark-900 border border-slate-700 rounded-xl text-sm text-white">
+
+              <input id="khataRateInput"
+                type="number"
+                min="0"
+                step="0.01"
+                oninput="calculateKhataItemTotal()"
+                placeholder="Rate"
+                class="w-full px-3 py-3 bg-dark-900 border border-slate-700 rounded-xl text-sm text-white">
+            </div>
+
+            <div class="mt-2 flex items-center justify-between bg-black/20 rounded-xl px-3 py-3">
+              <span class="text-xs text-slate-400">Item Total</span>
+              <span id="khataItemTotal" class="text-lg font-black text-amber-400">₹0</span>
+            </div>
+
+            <button onclick="addKhataBillItem()"
+              class="w-full mt-2 py-3 bg-amber-500 text-black rounded-xl text-sm font-black active:scale-95">
+              ADD TO KHATA
+            </button>
+          </div>
+
+          <!-- Payment -->
+          <div class="bg-dark-850 border border-slate-800 rounded-2xl p-3">
+            <p class="text-xs font-bold text-white mb-2">+ Record Payment</p>
+
+            <div class="flex gap-2">
+              <input id="khataPaymentInput"
+                type="number"
+                min="0"
+                step="0.01"
+                placeholder="Jama amount ₹"
+                class="flex-1 px-3 py-3 bg-dark-900 border border-slate-700 rounded-xl text-sm text-white">
+
+              <button onclick="addKhataPayment()"
+                class="px-4 py-3 bg-slate-200 text-black rounded-xl text-xs font-black">
+                PAYMENT
+              </button>
+            </div>
+          </div>
+
+          <!-- History -->
+          <div>
+            <div class="flex items-center justify-between mb-2">
+              <p class="text-xs font-bold text-white">Transaction History</p>
+              <button onclick="shareCurrentKhataWhatsApp()"
+                class="px-3 py-1.5 bg-slate-800 text-white rounded-lg text-[10px] font-bold">
+                WhatsApp
+              </button>
+            </div>
+
+            <div id="khataTransactionHistory" class="space-y-2"></div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <!-- VIEW 6: PROFILE VIEW -->
     <section id="view-profile" class="view-panel hidden space-y-4">
       <div class="bg-dark-850 p-5 rounded-2xl border border-slate-800 text-center space-y-3 relative overflow-hidden">
         <div class="w-16 h-16 rounded-2xl bg-gradient-to-br from-amber-500 to-amber-700 text-dark-900 mx-auto flex items-center justify-center font-black text-2xl shadow-xl shadow-amber-600/20">
@@ -453,7 +646,7 @@
   </div>
 
   <nav class="fixed bottom-0 left-0 right-0 z-40 bg-dark-850/95 backdrop-blur-md border-t border-slate-800/80 px-2 py-2">
-    <div class="max-w-xl mx-auto grid grid-cols-5 gap-1">
+    <div class="max-w-xl mx-auto grid grid-cols-6 gap-1">
       
       <!-- Home Tab -->
       <button onclick="switchView('home')" id="nav-home" class="nav-btn flex flex-col items-center justify-center py-1 rounded-xl text-amber-400 transition-colors">
@@ -487,6 +680,14 @@
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"></path>
         </svg>
         <span class="text-[10px] font-semibold">Categories</span>
+      </button>
+
+      <!-- Customer Khata Tab -->
+      <button onclick="switchView('khata')" id="nav-khata" class="nav-btn flex flex-col items-center justify-center py-1 rounded-xl text-slate-400 transition-colors">
+        <svg class="w-5 h-5 mb-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7h18M5 7v12a2 2 0 002 2h10a2 2 0 002-2V7M8 11h8M8 15h5M6 4h12"></path>
+        </svg>
+        <span class="text-[10px] font-semibold">Khata</span>
       </button>
 
       <!-- Profile Tab -->
@@ -832,6 +1033,7 @@
       renderFavorites();
       renderProducts();
       updateMetrics();
+      applySavedVoiceMuteState();
     });
 
     function loadInitialData() {
@@ -937,7 +1139,7 @@
       speechRecognition = new SpeechRecognition();
       speechRecognition.continuous = false;
       speechRecognition.interimResults = true;
-      speechRecognition.lang = 'hi-IN'; // Optimized for Hindi / Indian English
+      speechRecognition.lang = 'en-IN'; // Indian English product-name recognition
 
       speechRecognition.onstart = () => {
         isListening = true;
@@ -1023,28 +1225,138 @@
       }
     }
 
+    function normalizeVoiceText(text) {
+      return (text || '')
+        .toLowerCase()
+        .replace(/[“”"']/g, ' ')
+        .replace(/[^a-z0-9.]+/g, ' ')
+        .replace(/\\bone\\b/g, '1')
+        .replace(/\\btwo\\b/g, '2')
+        .replace(/\\bthree\\b/g, '3')
+        .replace(/\\bfour\\b/g, '4')
+        .replace(/\\bfive\\b/g, '5')
+        .replace(/\\bhalf\\b/g, '1/2')
+        .replace(/\\bquarter\\b/g, '1/4')
+        .replace(/\\s+/g, ' ')
+        .trim();
+    }
+
+    function findBestVoiceProduct(rawText) {
+      const query = normalizeVoiceText(rawText);
+
+      const stopWords = new Set([
+        'ka','ke','ki','hai','kya','batao','dikhao','please','tell','me',
+        'the','price','rate','selling','cost','what','is','of','for',
+        'product','item','show','give','mujhe','iska','iski','iska'
+      ]);
+
+      const queryWords = query
+        .split(' ')
+        .filter(w => w && !stopWords.has(w));
+
+      let best = null;
+      let bestScore = 0;
+
+      products.forEach(product => {
+        const productText = normalizeVoiceText(
+          `${product.name || ''} ${product.brand || ''} ${product.size || ''} ${product.category || ''} ${product.subcategory || ''}`
+        );
+
+        const productWords = productText.split(' ').filter(Boolean);
+        let score = 0;
+
+        queryWords.forEach(word => {
+          if (productText.includes(word)) {
+            score += word.length >= 3 ? 3 : 1;
+          }
+
+          productWords.forEach(pw => {
+            if (pw === word) score += 3;
+            else if (pw.startsWith(word) || word.startsWith(pw)) score += 2;
+          });
+        });
+
+        // Strong bonus when the important product phrase is contained.
+        if (query && productText.includes(query)) score += 8;
+
+        if (score > bestScore) {
+          bestScore = score;
+          best = product;
+        }
+      });
+
+      return bestScore >= 3 ? best : null;
+    }
+
     function processVoiceCommand(rawText) {
       let query = rawText.trim();
-      // Remove conversational fillers in Hindi and English
-      query = query.replace(/(ka price batao|ka rate batao|ka rate kya hai|ka selling price kya hai|batao|dikhao|rate|price|hai|kya)/gi, '').trim();
+
+      // Remove common conversational phrases.
+      query = query.replace(/(ka price batao|ka rate batao|ka rate kya hai|ka selling price kya hai|batao|dikhao|rate|price|hai|kya|please|tell me|what is|show me)/gi, ' ').replace(/\\s+/g, ' ').trim();
 
       showToast(`AI Searching: "${query}"`, "info");
-      document.getElementById('homeSearchInput').value = query;
+
+      const input = document.getElementById('homeSearchInput');
+      if (input) input.value = query;
+
       triggerSearch(query);
 
-      // Find best match and speak answer
-      const matches = executeSearchFilter(query);
-      if (matches.length > 0) {
-        const topItem = matches[0];
+      // Smart voice match: does not require an exact product-name sentence.
+      const topItem = findBestVoiceProduct(query);
+
+      if (topItem) {
         const priceText = topItem.sellingPrice ? `₹${topItem.sellingPrice}` : "Review pending";
         const speechOutput = `${topItem.name} ${topItem.size || ''} ka selling price ${priceText} hai.`;
         speakResponse(speechOutput);
+
+        // Show the matched product directly in the results.
+        const container = document.getElementById('productCardContainer');
+        const searchContainer = document.getElementById('searchResultsContainer');
+        const card = buildProductCardHtml(topItem);
+
+        if (container) container.innerHTML = card;
+        if (searchContainer) searchContainer.innerHTML = card;
+
+        const badge = document.getElementById('resultsCountBadge');
+        if (badge) badge.innerText = '1';
       } else {
-        speakResponse("No exact product found. Please try another product name.");
+        speakResponse("Product nahi mila. Product name ya size dobara boliye.");
+      }
+    }
+
+    let voiceMuted = localStorage.getItem('aparnaVoiceMuted') === 'true';
+
+    function toggleVoiceMute() {
+      voiceMuted = !voiceMuted;
+      localStorage.setItem('aparnaVoiceMuted', voiceMuted ? 'true' : 'false');
+
+      const icon = document.getElementById('muteVoiceIcon');
+      const btn = document.getElementById('muteVoiceBtn');
+
+      if (voiceMuted) {
+        window.speechSynthesis.cancel();
+        if (icon) icon.innerText = '🔇';
+        if (btn) btn.setAttribute('aria-label', 'Unmute Voice');
+        showToast('AI Voice Muted', 'info');
+      } else {
+        if (icon) icon.innerText = '🔊';
+        if (btn) btn.setAttribute('aria-label', 'Mute Voice');
+        showToast('AI Voice Unmuted', 'success');
+      }
+    }
+
+    function applySavedVoiceMuteState() {
+      const icon = document.getElementById('muteVoiceIcon');
+      const btn = document.getElementById('muteVoiceBtn');
+
+      if (voiceMuted) {
+        if (icon) icon.innerText = '🔇';
+        if (btn) btn.setAttribute('aria-label', 'Unmute Voice');
       }
     }
 
     function speakResponse(text) {
+      if (voiceMuted) return;
       if (!('speechSynthesis' in window)) return;
       window.speechSynthesis.cancel();
       const utterance = new SpeechSynthesisUtterance(text);
@@ -1071,8 +1383,32 @@
     }
 
     function triggerSearch(term) {
-      if (!term.trim()) return;
-      addRecentSearch(term.trim());
+      const cleanTerm = (term || '').trim();
+
+      if (!cleanTerm) {
+        currentSearchTag = '';
+        currentCategoryFilter = null;
+
+        const homeInput = document.getElementById('homeSearchInput');
+        const deepInput = document.getElementById('deepSearchInput');
+
+        if (homeInput) homeInput.value = '';
+        if (deepInput) deepInput.value = '';
+
+        renderProducts();
+        return;
+      }
+
+      currentSearchTag = '';
+      currentCategoryFilter = null;
+
+      const homeInput = document.getElementById('homeSearchInput');
+      const deepInput = document.getElementById('deepSearchInput');
+
+      if (homeInput) homeInput.value = cleanTerm;
+      if (deepInput) deepInput.value = cleanTerm;
+
+      addRecentSearch(cleanTerm);
       renderProducts();
     }
 
@@ -1576,6 +1912,648 @@ _Contact Aparna Traders, Konbir for bulk orders._`;
       window.open(`https://api.whatsapp.com/send?text=${encoded}`, '_blank');
     }
 
+    let customerKhata = JSON.parse(localStorage.getItem('aparnaCustomerKhata') || '[]');
+
+    function saveCustomerKhata() {
+      localStorage.setItem('aparnaCustomerKhata', JSON.stringify(customerKhata));
+      renderKhataCustomers();
+      updateKhataSummary();
+    }
+
+    function updateKhataSummary() {
+      const count = customerKhata.length;
+      const billTotal = customerKhata.reduce((sum, c) => sum + Number(c.totalBill || 0), 0);
+      const balanceTotal = customerKhata.reduce((sum, c) => sum + Number(c.balance || 0), 0);
+
+      const countEl = document.getElementById('khataCustomerCount');
+      const billEl = document.getElementById('khataBillTotal');
+      const balanceEl = document.getElementById('khataBalanceTotal');
+
+      if (countEl) countEl.innerText = count;
+      if (billEl) billEl.innerText = '₹' + billTotal.toFixed(2).replace(/\.00$/, '');
+      if (balanceEl) balanceEl.innerText = '₹' + balanceTotal.toFixed(2).replace(/\.00$/, '');
+    }
+
+    function deleteCustomerKhata(id) {
+      const customer = customerKhata.find(c => String(c.id) === String(id));
+      if (!customer) return;
+
+      const confirmed = confirm(
+        `Delete account for ${customer.name}? This will permanently remove this customer's bills and payment history from this device.`
+      );
+
+      if (!confirmed) return;
+
+      customerKhata = customerKhata.filter(
+        c => String(c.id) !== String(id)
+      );
+
+      saveCustomerKhata();
+
+      if (String(activeKhataCustomerId) === String(id)) {
+        closeKhataDetail();
+      }
+
+      renderKhataCustomers();
+      updateKhataSummary();
+
+      if (typeof showToast === "function") {
+        showToast("Customer account deleted", "success");
+      }
+    }
+
+    function renderKhataCustomers() {
+      const list = document.getElementById('khataCustomerList');
+      if (!list) return;
+
+      const search = (document.getElementById('khataSearchInput')?.value || '').trim().toLowerCase();
+
+      const filtered = customerKhata.filter(c =>
+        !search ||
+        String(c.name || '').toLowerCase().includes(search) ||
+        String(c.mobile || '').includes(search)
+      );
+
+      if (!filtered.length) {
+        list.innerHTML = `
+          <div class="bg-dark-850 border border-slate-800 rounded-2xl p-5 text-center">
+            <p class="text-sm text-slate-300">${customerKhata.length ? 'Customer nahi mila.' : 'Abhi koi customer khata nahi hai.'}</p>
+          </div>`;
+        updateKhataSummary();
+        return;
+      }
+
+      list.innerHTML = filtered.map(c => `
+        <div class="bg-dark-850 border border-slate-800 rounded-2xl p-4">
+          <div class="flex items-center justify-between">
+            <div>
+              <p class="text-sm font-bold text-white">${escapeHtml(c.name)}</p>
+              <p class="text-[11px] text-slate-400">${escapeHtml(c.mobile || 'Mobile not added')}</p>
+            </div>
+            <div class="text-right">
+              <p class="text-[10px] text-slate-500">TOTAL DUES</p>
+              <p class="text-base font-black ${Number(c.balance || 0) > 0 ? 'text-red-400' : 'text-emerald-400'}">
+                ₹${Number(c.balance || 0).toFixed(2).replace(/\.00$/, '')}
+              </p>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-2 gap-2 mt-3 text-xs">
+            <div class="bg-dark-900 rounded-lg p-2">
+              <span class="text-slate-500">Total Bill</span>
+              <span class="block text-white font-bold">₹${Number(c.totalBill || 0).toFixed(2).replace(/\.00$/, '')}</span>
+            </div>
+            <div class="bg-dark-900 rounded-lg p-2">
+              <span class="text-slate-500">Total Paid</span>
+              <span class="block text-emerald-400 font-bold">₹${Number(c.paid || 0).toFixed(2).replace(/\.00$/, '')}</span>
+            </div>
+          </div>
+
+          <div class="flex gap-2 mt-3">
+            <button onclick="openCustomerKhata('${c.id}')" class="flex-1 py-2 bg-amber-500 text-black rounded-lg text-xs font-bold">
+              View Account
+            </button>
+            <button onclick="shareCustomerKhataWhatsApp('${c.id}')" class="py-2 px-3 bg-emerald-600 text-white rounded-lg text-xs font-bold">
+              WhatsApp
+            </button>
+            <button onclick="deleteCustomerKhata('${c.id}')" class="py-2 px-3 bg-red-700 text-white rounded-lg text-xs font-bold">
+              Delete Khata
+            </button>
+          </div>
+        </div>
+      `).join('');
+
+      updateKhataSummary();
+    }
+
+    function openAddCustomerKhata() {
+      const name = prompt('Customer ka naam likhiye:');
+      if (!name || !name.trim()) return;
+
+      const mobile = prompt('Customer mobile number likhiye:') || '';
+
+      const customer = {
+        id: 'khata-' + Date.now(),
+        name: name.trim(),
+        mobile: mobile.trim(),
+        totalBill: 0,
+        paid: 0,
+        balance: 0,
+        transactions: [],
+        createdAt: new Date().toISOString()
+      };
+
+      customerKhata.unshift(customer);
+      saveCustomerKhata();
+      showToast('Customer khata created', 'success');
+    }
+
+    let activeKhataCustomerId = null;
+
+    function formatKhataMoney(value) {
+      const n = Number(value || 0);
+      return '₹' + n.toFixed(2).replace(/\.00$/, '');
+    }
+
+    function populateKhataProductSelect() {
+      const select = document.getElementById('khataProductSelect');
+      if (!select) return;
+
+      const sorted = [...products].sort((a, b) =>
+        String(a.name || '').localeCompare(String(b.name || ''))
+      );
+
+      select.innerHTML =
+        '<option value="">Product select karein</option>' +
+        sorted.map(p => `
+          <option value="${escapeHtml(String(p.id))}">
+            ${escapeHtml(p.name || 'Unnamed')} ${p.size ? '- ' + escapeHtml(p.size) : ''}
+          </option>
+        `).join('');
+    }
+
+    function khataProductChanged() {
+      const select = document.getElementById('khataProductSelect');
+      const rateInput = document.getElementById('khataRateInput');
+
+      if (!select || !rateInput) return;
+
+      const product = products.find(p => String(p.id) === String(select.value));
+
+      if (product) {
+        rateInput.value = Number(product.sellingPrice || 0);
+      }
+
+      calculateKhataItemTotal();
+    }
+
+
+    function searchKhataProduct() {
+      const input = document.getElementById('khataProductSearch');
+      const select = document.getElementById('khataProductSelect');
+
+      if (!input || !select) return;
+
+      const q = input.value.trim().toLowerCase();
+
+      const matches = products.filter(p => {
+        const text = [
+          p.name || '',
+          p.brand || '',
+          p.size || '',
+          p.category || '',
+          p.subcategory || ''
+        ].join(' ').toLowerCase();
+
+        return !q || text.includes(q);
+      }).slice(0, 30);
+
+      select.innerHTML =
+        '<option value="">Product select karein</option>' +
+        matches.map(p => `
+          <option value="${escapeHtml(String(p.id))}">
+            ${escapeHtml(p.name || 'Unnamed')} ${p.size ? '- ' + escapeHtml(p.size) : ''}
+          </option>
+        `).join('');
+
+      if (matches.length === 1) {
+        select.value = String(matches[0].id);
+        khataProductChanged();
+      }
+    }
+
+    function startKhataProductVoice() {
+      const SpeechRecognition =
+        window.SpeechRecognition || window.webkitSpeechRecognition;
+
+      if (!SpeechRecognition) {
+        showToast('Voice recognition browser me available nahi hai', 'error');
+        return;
+      }
+
+      const btn = document.getElementById('khataVoiceBtn');
+
+      const recognition = new SpeechRecognition();
+      recognition.continuous = false;
+      recognition.interimResults = false;
+      recognition.lang = 'en-IN';
+
+      if (btn) {
+        btn.innerText = '🔴';
+        btn.classList.add('animate-pulse');
+      }
+
+      recognition.onresult = function(event) {
+        const spoken = event.results[0][0].transcript || '';
+        const input = document.getElementById('khataProductSearch');
+
+        if (input) input.value = spoken;
+
+        findKhataVoiceProduct(spoken);
+      };
+
+      recognition.onerror = function() {
+        showToast('Product naam dobara boliye', 'error');
+      };
+
+      recognition.onend = function() {
+        if (btn) {
+          btn.innerText = '🎤';
+          btn.classList.remove('animate-pulse');
+        }
+      };
+
+      recognition.start();
+    }
+
+    function normalizeKhataVoice(text) {
+      return String(text || '')
+        .toLowerCase()
+        .replace(/[“”"']/g, ' ')
+        .replace(/\bone\b/g, '1')
+        .replace(/\btwo\b/g, '2')
+        .replace(/\bthree\b/g, '3')
+        .replace(/\bfour\b/g, '4')
+        .replace(/\bfive\b/g, '5')
+        .replace(/\bhalf\b/g, '1/2')
+        .replace(/[^a-z0-9./]+/g, ' ')
+        .replace(/\s+/g, ' ')
+        .trim();
+    }
+
+    function findKhataVoiceProduct(spokenText) {
+      const query = normalizeKhataVoice(spokenText);
+
+      if (!query) return;
+
+      const words = query.split(' ').filter(Boolean);
+
+      let best = null;
+      let bestScore = 0;
+
+      products.forEach(product => {
+        const productText = normalizeKhataVoice([
+          product.name || '',
+          product.brand || '',
+          product.size || '',
+          product.category || '',
+          product.subcategory || ''
+        ].join(' '));
+
+        let score = 0;
+
+        words.forEach(word => {
+          if (productText.includes(word)) {
+            score += word.length >= 3 ? 4 : 1;
+          }
+        });
+
+        if (productText.includes(query)) {
+          score += 10;
+        }
+
+        if (score > bestScore) {
+          bestScore = score;
+          best = product;
+        }
+      });
+
+      if (!best || bestScore < 3) {
+        showToast('Product nahi mila: ' + spokenText, 'error');
+        return;
+      }
+
+      const input = document.getElementById('khataProductSearch');
+      const select = document.getElementById('khataProductSelect');
+
+      if (input) input.value = best.name + (best.size ? ' ' + best.size : '');
+
+      if (select) {
+        select.innerHTML = `
+          <option value="${escapeHtml(String(best.id))}">
+            ${escapeHtml(best.name || 'Unnamed')} ${best.size ? '- ' + escapeHtml(best.size) : ''}
+          </option>`;
+
+        select.value = String(best.id);
+      }
+
+      khataProductChanged();
+
+      if ('speechSynthesis' in window) {
+        window.speechSynthesis.cancel();
+
+        const rate = Number(best.sellingPrice || 0);
+
+        const speech = new SpeechSynthesisUtterance(
+          `${best.name} ka selling rate ${rate} rupaye hai`
+        );
+
+        speech.lang = 'hi-IN';
+        speech.rate = 0.95;
+
+        window.speechSynthesis.speak(speech);
+      }
+
+      showToast(
+        `Product selected: ${best.name} ${best.size || ''}`,
+        'success'
+      );
+    }
+
+    function calculateKhataItemTotal() {
+      const qty = Number(document.getElementById('khataQtyInput')?.value || 0);
+      const rate = Number(document.getElementById('khataRateInput')?.value || 0);
+      const total = qty * rate;
+
+      const el = document.getElementById('khataItemTotal');
+      if (el) el.innerText = formatKhataMoney(total);
+    }
+
+    function openCustomerKhata(id) {
+      const c = customerKhata.find(x => x.id === id);
+      if (!c) return;
+
+      activeKhataCustomerId = id;
+
+      if (!Array.isArray(c.transactions)) {
+        c.transactions = [];
+      }
+
+      const modal = document.getElementById('khataDetailModal');
+      if (!modal) return;
+
+      document.getElementById('khataDetailName').innerText = c.name || 'Customer';
+      document.getElementById('khataDetailMobile').innerText =
+        c.mobile || 'Mobile not added';
+
+      populateKhataProductSelect();
+
+      const qty = document.getElementById('khataQtyInput');
+      const rate = document.getElementById('khataRateInput');
+      const payment = document.getElementById('khataPaymentInput');
+
+      if (qty) qty.value = '1';
+      if (rate) rate.value = '';
+      if (payment) payment.value = '';
+
+      calculateKhataItemTotal();
+      renderKhataDetail();
+
+      modal.classList.remove('hidden');
+    }
+
+    function closeKhataDetail() {
+      const modal = document.getElementById('khataDetailModal');
+      if (modal) modal.classList.add('hidden');
+
+      activeKhataCustomerId = null;
+    }
+
+    function renderKhataDetail() {
+      const c = customerKhata.find(x => x.id === activeKhataCustomerId);
+      if (!c) return;
+
+      const bill = Number(c.totalBill || 0);
+      const paid = Number(c.paid || 0);
+      const balance = Math.max(0, bill - paid);
+
+      c.totalBill = bill;
+      c.paid = paid;
+      c.balance = balance;
+
+      const billEl = document.getElementById('khataDetailBill');
+      const paidEl = document.getElementById('khataDetailPaid');
+      const balanceEl = document.getElementById('khataDetailBalance');
+
+      if (billEl) billEl.innerText = formatKhataMoney(bill);
+      if (paidEl) paidEl.innerText = formatKhataMoney(paid);
+      if (balanceEl) balanceEl.innerText = formatKhataMoney(balance);
+
+      const history = document.getElementById('khataTransactionHistory');
+      if (!history) return;
+
+      const transactions = Array.isArray(c.transactions)
+        ? [...c.transactions].reverse()
+        : [];
+
+      if (!transactions.length) {
+        history.innerHTML = `
+          <div class="bg-dark-850 border border-slate-800 rounded-xl p-4 text-center">
+            <p class="text-xs text-slate-500">Abhi koi transaction nahi hai.</p>
+          </div>`;
+        return;
+      }
+
+      history.innerHTML = transactions.map(t => {
+        const isPayment = t.type === 'payment';
+
+        return `
+          <div class="bg-dark-850 border border-slate-800 rounded-xl p-3">
+            <div class="flex items-center justify-between gap-2">
+              <div>
+                <p class="text-xs font-bold ${isPayment ? 'text-emerald-400' : 'text-white'}">
+                  ${isPayment ? 'PAYMENT' : escapeHtml(t.productName || 'Bill')}
+                </p>
+
+                <p class="text-[10px] text-slate-500">
+                  ${new Date(t.date).toLocaleString('en-IN')}
+                </p>
+
+                ${!isPayment ? `
+                  <p class="text-[10px] text-slate-400 mt-1">
+                    Qty: ${Number(t.quantity || 0)}
+                    × Rate: ${formatKhataMoney(t.rate)}
+                  </p>
+                ` : ''}
+              </div>
+
+              <p class="text-sm font-black ${isPayment ? 'text-emerald-400' : 'text-amber-400'}">
+                ${isPayment ? '+' : ''}${formatKhataMoney(t.amount)}
+              </p>
+            </div>
+          </div>`;
+      }).join('');
+    }
+
+    function addKhataBillItem() {
+      const c = customerKhata.find(x => x.id === activeKhataCustomerId);
+      if (!c) return;
+
+      const select = document.getElementById('khataProductSelect');
+      const qtyInput = document.getElementById('khataQtyInput');
+      const rateInput = document.getElementById('khataRateInput');
+
+      const product = products.find(
+        p => String(p.id) === String(select?.value || '')
+      );
+
+      const qty = Number(qtyInput?.value || 0);
+      const rate = Number(rateInput?.value || 0);
+
+      if (!product) {
+        showToast('Pehle product select karein', 'error');
+        return;
+      }
+
+      if (qty <= 0) {
+        showToast('Quantity sahi dalein', 'error');
+        return;
+      }
+
+      if (rate < 0) {
+        showToast('Rate sahi dalein', 'error');
+        return;
+      }
+
+      const amount = qty * rate;
+
+      if (!Array.isArray(c.transactions)) {
+        c.transactions = [];
+      }
+
+      c.transactions.push({
+        id: 'txn-' + Date.now(),
+        type: 'bill',
+        productId: product.id,
+        productName: product.name || 'Product',
+        size: product.size || '',
+        quantity: qty,
+        rate: rate,
+        amount: amount,
+        date: new Date().toISOString()
+      });
+
+      c.totalBill = Number(c.totalBill || 0) + amount;
+      c.balance = Math.max(0, c.totalBill - Number(c.paid || 0));
+
+      saveCustomerKhata();
+      renderKhataDetail();
+
+      if (qtyInput) qtyInput.value = '1';
+      if (rateInput) rateInput.value = '';
+
+      const itemTotal = document.getElementById('khataItemTotal');
+      if (itemTotal) itemTotal.innerText = '₹0';
+
+      showToast('Bill item added', 'success');
+    }
+
+    function addKhataPayment() {
+      const c = customerKhata.find(x => x.id === activeKhataCustomerId);
+      if (!c) return;
+
+      const input = document.getElementById('khataPaymentInput');
+      const amount = Number(input?.value || 0);
+
+      if (!Number.isFinite(amount) || amount <= 0) {
+        showToast('Sahi payment amount dalein', 'error');
+        return;
+      }
+
+      if (!Array.isArray(c.transactions)) c.transactions = [];
+
+      c.transactions.push({
+        id: 'txn-' + Date.now(),
+        type: 'payment',
+        amount: amount,
+        date: new Date().toISOString(),
+        note: Number(c.totalBill || 0) <= Number(c.paid || 0)
+          ? 'Advance Payment'
+          : 'Payment Received'
+      });
+
+      c.paid = Number(c.paid || 0) + amount;
+      c.balance = Number(c.totalBill || 0) - c.paid;
+
+      saveCustomerKhata();
+      renderKhataDetail();
+      renderKhataCustomers();
+
+      if (input) input.value = '';
+      showToast('Payment saved successfully', 'success');
+    }
+
+    function shareCurrentKhataWhatsApp() {
+      if (!activeKhataCustomerId) return;
+      shareCustomerKhataWhatsApp(activeKhataCustomerId);
+    }
+
+    async function shareCustomerKhataWhatsApp(id) {
+      const c = customerKhata.find(x => String(x.id) === String(id));
+      if (!c) return;
+
+      const bill = Number(c.totalBill || 0);
+      const paid = Number(c.paid || 0);
+      const dues = bill - paid;
+      const netDue = Math.max(0, dues);
+
+      const upiId = '7903393069-2@ybl';
+      const payLink = 'upi://pay?' + new URLSearchParams({
+        pa: upiId,
+        pn: 'Aparna Traders',
+        am: netDue.toFixed(2),
+        cu: 'INR',
+        tn: 'Khata payment - ' + (c.name || 'Customer')
+      }).toString();
+
+      const message =
+`*APARNA TRADERS*
+_Main Road, Konbir_
+
+*CUSTOMER KHATA STATEMENT*
+Name: ${c.name}
+Mobile: ${c.mobile || 'N/A'}
+
+Total Bill: ₹${bill.toFixed(2)}
+Total Jama/Paid: ₹${paid.toFixed(2)}
+*Net Balance Due: ₹${netDue.toFixed(2)}*
+
+*PAYMENT VIA PHONEPE*
+Open this payment link on your phone:
+${payLink}
+
+
+Please verify the name and amount before paying.
+
+Thank you for shopping with Aparna Traders.`;
+
+      try {
+        const response = await fetch('./phonepe-qr.png');
+        if (!response.ok) throw new Error('QR image not found');
+
+        const blob = await response.blob();
+        const qrFile = new File(
+          [blob],
+          'Aparna-Traders-PhonePe-QR.png',
+          { type: 'image/png' }
+        );
+
+        if (navigator.share && navigator.canShare &&
+            navigator.canShare({ files: [qrFile] })) {
+          await navigator.share({
+            title: 'Aparna Traders - Khata & PhonePe Payment',
+            text: message,
+            files: [qrFile]
+          });
+        } else {
+          window.open(
+            'https://api.whatsapp.com/send?text=' +
+            encodeURIComponent(message),
+            '_blank'
+          );
+          alert('WhatsApp statement khul jayega. QR image zarurat pade toh alag se attach karein.');
+        }
+      } catch (error) {
+        if (error.name === 'AbortError') return;
+        window.open(
+          'https://api.whatsapp.com/send?text=' +
+          encodeURIComponent(message),
+          '_blank'
+        );
+        alert('Statement WhatsApp mein khulega. QR image ko zarurat pade toh manually attach karein.');
+      }
+    }
+
     function switchView(viewName) {
       document.querySelectorAll('.view-panel').forEach(panel => {
         panel.classList.add('hidden');
@@ -1598,6 +2576,11 @@ _Contact Aparna Traders, Konbir for bulk orders._`;
 
       if (viewName === 'home' || viewName === 'search') {
         renderProducts();
+      }
+
+      if (viewName === 'khata') {
+        renderKhataCustomers();
+        updateKhataSummary();
       }
     }
 
@@ -1635,5 +2618,17 @@ _Contact Aparna Traders, Konbir for bulk orders._`;
         .replace(/'/g, '&#039;');
     }
   </script>
+
+  <script>
+    if ("serviceWorker" in navigator && location.protocol === "https:") {
+      window.addEventListener("load", function () {
+        navigator.serviceWorker.register("./service-worker.js")
+          .catch(function (error) {
+            console.error("Aparna PWA registration failed:", error);
+          });
+      });
+    }
+  </script>
+
 </body>
 </html>
