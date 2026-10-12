@@ -3,7 +3,7 @@
   "name": "Aparna Traders Smart AI",
   "short_name": "Aparna Smart AI",
   "description": "Aparna Traders Price List, Voice Assistant and Customer Khata",
-  "start_url": "./",
+  "start_url": "./index.khata-test.html",
   "scope": "./",
   "display": "standalone",
   "orientation": "portrait",
